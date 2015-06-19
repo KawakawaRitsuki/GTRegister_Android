@@ -1,6 +1,8 @@
 package com.kawakawaplanning.gtregister;
 
+import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.hardware.Camera;
@@ -11,10 +13,13 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.preference.PreferenceManager;
 import android.support.v7.app.ActionBarActivity;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewGroup;
+import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.Toast;
 
@@ -87,6 +92,46 @@ public class MainActivity extends ActionBarActivity {
         });
 
     }
+
+    public void kaikei(View v){
+        new SendThread(MainActivity.this,"kaikei").start();
+        AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(this);
+        LayoutInflater inflatername = (LayoutInflater)this.getSystemService(
+                LAYOUT_INFLATER_SERVICE);
+        View viewname =  inflatername.inflate(R.layout.dialog_kaikei,
+                (ViewGroup)findViewById(R.id.dialogname_layout));
+
+        final EditText et = (EditText)viewname.findViewById(R.id.editText);
+        alertDialogBuilder.setTitle("受取金額入力");
+        alertDialogBuilder.setView(viewname);
+        alertDialogBuilder.setPositiveButton("OK",
+                new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        String uketori = et.getEditableText().toString();
+
+                        if (!uketori.isEmpty()) {
+                            new SendThread(MainActivity.this,"uketori," + uketori).start();
+                        }
+                    }
+                });
+        alertDialogBuilder.setCancelable(true);
+        AlertDialog alertDialog = alertDialogBuilder.create();
+        alertDialog.show();
+    }
+
+    public void waribiki(View v){
+        new SendThread(MainActivity.this,"5/10").start();
+    }
+
+    public void nyuryoku(View v){
+//        new SendThread(MainActivity.this,sym.getData()).start();
+    }
+
+    public void cancel(View v){
+        new SendThread(MainActivity.this,"cancel").start();
+    }
+
 
     public void onPause() {
         super.onPause();
