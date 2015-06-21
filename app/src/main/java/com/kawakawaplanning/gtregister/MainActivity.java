@@ -19,8 +19,11 @@ import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.WindowManager;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.FrameLayout;
+import android.widget.LinearLayout;
 import android.widget.Toast;
 
 import net.sourceforge.zbar.Config;
@@ -33,6 +36,8 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /* Import ZBar Class files */
 
@@ -42,7 +47,10 @@ public class MainActivity extends ActionBarActivity {
     private Handler autoFocusHandler;
     private SoundPool sp;
     private int sound_id;
+    private AlertDialog alertDialog;
 
+    public static LinearLayout buttons;
+    public static Button button;
 
     ImageScanner scanner;
 
@@ -58,6 +66,8 @@ public class MainActivity extends ActionBarActivity {
 
         setContentView(R.layout.activity_main);
 
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+
         sp = new SoundPool( 1, AudioManager.STREAM_MUSIC, 0 );
         sound_id = sp.load(this, R.raw.success, 1 );
 
@@ -65,6 +75,12 @@ public class MainActivity extends ActionBarActivity {
 
         autoFocusHandler = new Handler();
         mCamera = getCameraInstance();
+
+        button = (Button)findViewById(R.id.button);
+        buttons = (LinearLayout)findViewById(R.id.buttons);
+
+        buttons.setVisibility(View.INVISIBLE);
+        button.setVisibility(View.VISIBLE);
 
         /* Instance barcode scanner */
         scanner = new ImageScanner();
@@ -85,7 +101,20 @@ public class MainActivity extends ActionBarActivity {
                     mCamera.setPreviewCallback(previewCb);
                     mCamera.startPreview();
                     previewing = true;
+                    mCamera.cancelAutoFocus();
                     mCamera.autoFocus(autoFocusCB);
+                    buttons.setVisibility(View.INVISIBLE);
+                    button.setVisibility(View.VISIBLE);
+                }else{
+                    new Thread(new Runnable() {
+                        @Override
+                        public void run() {
+                            if (previewing) {
+                                mCamera.cancelAutoFocus();
+                                mCamera.autoFocus(autoFocusCB);
+                            }
+                        }
+                    }).start();
                 }
                 return false;
             }
@@ -93,42 +122,154 @@ public class MainActivity extends ActionBarActivity {
 
     }
 
+    public static boolean isNumber(String str){
+        Pattern p = Pattern.compile("^[1-9][0-9]*");
+        Matcher m = p.matcher(str);
+
+        return m.find();
+    }
+
     public void kaikei(View v){
         new SendThread(MainActivity.this,"kaikei").start();
         AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(this);
         LayoutInflater inflatername = (LayoutInflater)this.getSystemService(
                 LAYOUT_INFLATER_SERVICE);
-        View viewname =  inflatername.inflate(R.layout.dialog_kaikei,
+        View view =  inflatername.inflate(R.layout.dialog_kaikei,
                 (ViewGroup)findViewById(R.id.dialogname_layout));
 
-        final EditText et = (EditText)viewname.findViewById(R.id.editText);
+        final EditText et = (EditText)view.findViewById(R.id.editText);
         alertDialogBuilder.setTitle("受取金額入力");
-        alertDialogBuilder.setView(viewname);
+        alertDialogBuilder.setView(view);
         alertDialogBuilder.setPositiveButton("OK",
                 new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
                         String uketori = et.getEditableText().toString();
 
-                        if (!uketori.isEmpty()) {
-                            new SendThread(MainActivity.this,"uketori," + uketori).start();
+                        if (!uketori.isEmpty() && isNumber(uketori)) {
+                            new SendThread(MainActivity.this, "uketori," + uketori).start();
                         }
                     }
                 });
         alertDialogBuilder.setCancelable(true);
-        AlertDialog alertDialog = alertDialogBuilder.create();
+        alertDialog = alertDialogBuilder.create();
         alertDialog.show();
     }
 
     public void waribiki(View v){
-        new SendThread(MainActivity.this,"5/10").start();
+        AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(this);
+        LayoutInflater inflatername = (LayoutInflater)this.getSystemService(
+                LAYOUT_INFLATER_SERVICE);
+        View view =  inflatername.inflate(R.layout.dialog_waribiki,
+                (ViewGroup)findViewById(R.id.dialog_waribiki_layout));
+
+        view.findViewById(R.id.btn1).setOnClickListener(onClick);
+        view.findViewById(R.id.btn2).setOnClickListener(onClick);
+        view.findViewById(R.id.btn3).setOnClickListener(onClick);
+        view.findViewById(R.id.btn4).setOnClickListener(onClick);
+        view.findViewById(R.id.btn5).setOnClickListener(onClick);
+        view.findViewById(R.id.btn6).setOnClickListener(onClick);
+        view.findViewById(R.id.btn7).setOnClickListener(onClick);
+        view.findViewById(R.id.btn8).setOnClickListener(onClick);
+        view.findViewById(R.id.btn9).setOnClickListener(onClick);
+
+
+        alertDialogBuilder.setTitle("割引選択");
+        alertDialogBuilder.setView(view);
+        alertDialogBuilder.setCancelable(true);
+        alertDialog = alertDialogBuilder.create();
+        alertDialog.show();
     }
+
+    public View.OnClickListener onClick = new View.OnClickListener() {
+        @Override
+        public void onClick(View v) {
+            int waribiki = 0;
+            switch (v.getId()){
+                case R.id.btn1:
+                    waribiki = 1;
+                    break;
+                case R.id.btn2:
+                    waribiki = 2;
+                    break;
+                case R.id.btn3:
+                    waribiki = 3;
+                    break;
+                case R.id.btn4:
+                    waribiki = 4;
+                    break;
+                case R.id.btn5:
+                    waribiki = 5;
+                    break;
+                case R.id.btn6:
+                    waribiki = 6;
+                    break;
+                case R.id.btn7:
+                    waribiki = 7;
+                    break;
+                case R.id.btn8:
+                    waribiki = 8;
+                    break;
+                case R.id.btn9:
+                    waribiki = 9;
+                    break;
+            }
+            new SendThread(MainActivity.this,waribiki+"割引").start();
+            alertDialog.dismiss();
+            barcodeScanned = false;
+            mCamera.setPreviewCallback(previewCb);
+            mCamera.startPreview();
+            previewing = true;
+            mCamera.cancelAutoFocus();
+            mCamera.autoFocus(autoFocusCB);
+            buttons.setVisibility(View.INVISIBLE);
+            button.setVisibility(View.VISIBLE);
+        }
+    };
 
     public void nyuryoku(View v){
 //        new SendThread(MainActivity.this,sym.getData()).start();
+        AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(this);
+        LayoutInflater inflaterInput = (LayoutInflater)this.getSystemService(
+                LAYOUT_INFLATER_SERVICE);
+        View view =  inflaterInput.inflate(R.layout.dialog_input,
+                (ViewGroup)findViewById(R.id.dialog_input_layout));
+
+        final EditText et = (EditText)view.findViewById(R.id.editText);
+        alertDialogBuilder.setTitle("商品金額入力");
+        alertDialogBuilder.setView(view);
+        alertDialogBuilder.setPositiveButton("OK",
+                new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        String input = et.getEditableText().toString();
+
+
+
+                        if (!input.isEmpty() && isNumber(input)) {
+                            new SendThread(MainActivity.this, input).start();
+                            previewing = false;
+                            mCamera.setPreviewCallback(null);
+                            mCamera.stopPreview();
+                            buttons.setVisibility(View.VISIBLE);
+                            button.setVisibility(View.INVISIBLE);
+                        }//else文でエラー書く
+                    }
+                });
+        alertDialogBuilder.setCancelable(true);
+        alertDialog = alertDialogBuilder.create();
+        alertDialog.show();
     }
 
     public void cancel(View v){
+        barcodeScanned = false;
+        mCamera.setPreviewCallback(previewCb);
+        mCamera.startPreview();
+        previewing = true;
+        mCamera.cancelAutoFocus();
+        mCamera.autoFocus(autoFocusCB);
+        buttons.setVisibility(View.INVISIBLE);
+        button.setVisibility(View.VISIBLE);
         new SendThread(MainActivity.this,"cancel").start();
     }
 
@@ -136,7 +277,9 @@ public class MainActivity extends ActionBarActivity {
     public void onPause() {
         super.onPause();
         releaseCamera();
+        finish();
     }
+
 
     /** A safe way to get an instance of the Camera object. */
     public static Camera getCameraInstance(){
@@ -157,10 +300,11 @@ public class MainActivity extends ActionBarActivity {
         }
     }
 
+
     private Runnable doAutoFocus = new Runnable() {
         public void run() {
-            if (previewing)
-                mCamera.autoFocus(autoFocusCB);
+//            if (previewing)
+//                mCamera.autoFocus(autoFocusCB);
         }
     };
 
@@ -172,18 +316,23 @@ public class MainActivity extends ActionBarActivity {
             Image barcode = new Image(size.width, size.height, "Y800");
             barcode.setData(data);
 
+
             int result = scanner.scanImage(barcode);
 
             if (result != 0) {
                 previewing = false;
                 mCamera.setPreviewCallback(null);
                 mCamera.stopPreview();
+                buttons.setVisibility(View.VISIBLE);
+                button.setVisibility(View.INVISIBLE);
 
                 SymbolSet syms = scanner.getResults();
                 for (Symbol sym : syms) {
                     sp.play(sound_id, 1.0F, 1.0F, 0, 0, 1.0F);
-                    Toast.makeText(MainActivity.this,sym.getData(),Toast.LENGTH_SHORT).show();
-                    new SendThread(MainActivity.this,sym.getData()).start();
+                    if(isNumber(sym.getData())) {
+                        Toast.makeText(MainActivity.this, sym.getData(), Toast.LENGTH_SHORT).show();
+                        new SendThread(MainActivity.this, sym.getData()).start();
+                    }
                     barcodeScanned = true;
                 }
             }

@@ -29,39 +29,47 @@
                 android:layout_height="0dp"
                 android:layout_weight="15" />
 
-            <LinearLayout
-                android:orientation="horizontal"
+            <FrameLayout
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
-                android:layout_gravity="bottom"
+                android:layout_gravity="center_horizontal"
                 android:layout_weight="3">
 
-                <Button
-                    android:layout_width="0dp"
+                <LinearLayout
+                    android:orientation="horizontal"
+                    android:layout_width="match_parent"
                     android:layout_height="match_parent"
-                    android:text="最後の商品を訂正"
-                    android:id="@+id/button4"
-                    android:layout_weight="1"
-                    android:onClick="cancel" />
+                    android:layout_gravity="bottom"
+                    android:id="@+id/buttons">
+
+                    <Button
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:text="最後の商品を訂正"
+                        android:id="@+id/button4"
+                        android:layout_weight="1"
+                        android:onClick="cancel" />
+
+                    <Button
+                        android:layout_width="0dp"
+                        android:layout_height="match_parent"
+                        android:text="割引"
+                        android:id="@+id/button2"
+                        android:layout_gravity="center_horizontal"
+                        android:layout_weight="1"
+                        android:onClick="waribiki" />
+
+                </LinearLayout>
 
                 <Button
-                    android:layout_width="0dp"
+                    android:layout_width="match_parent"
                     android:layout_height="match_parent"
                     android:text="手入力"
                     android:id="@+id/button"
                     android:layout_weight="1"
-                    android:onClick="nyuryoku" />
-
-                <Button
-                    android:layout_width="0dp"
-                    android:layout_height="match_parent"
-                    android:text="割引(一時的に半額)"
-                    android:id="@+id/button2"
-                    android:layout_gravity="center_horizontal"
-                    android:layout_weight="1"
-                    android:onClick="waribiki" />
-
-            </LinearLayout>
+                    android:onClick="nyuryoku"
+                    android:layout_gravity="right" />
+            </FrameLayout>
 
             <Button
                 android:layout_width="match_parent"
@@ -69,7 +77,7 @@
                 android:text="会計"
                 android:id="@+id/button3"
                 android:layout_gravity="right"
-                android:layout_weight="2"
+                android:layout_weight="3"
                 android:onClick="kaikei" />
 
         </LinearLayout>
