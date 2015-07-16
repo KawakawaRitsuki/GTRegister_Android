@@ -3,6 +3,7 @@ package com.kawakawaplanning.gtregister;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.hardware.Camera;
@@ -39,9 +40,8 @@ import java.net.UnknownHostException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/* Import ZBar Class files */
-
 public class MainActivity extends ActionBarActivity {
+
     private Camera mCamera;
     private CameraPreview mPreview;
     private Handler autoFocusHandler;
@@ -56,22 +56,32 @@ public class MainActivity extends ActionBarActivity {
 
     private boolean barcodeScanned = false;
     private boolean previewing = true;
+    public static final int PREFERENCE_INIT = 0;
+    public static final int PREFERENCE_BOOTED = 1;
 
     static {
         System.loadLibrary("iconv");
     }
 
     public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
 
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);//画面常時点灯のアレ
+        super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        SharedPreferences spf = PreferenceManager.getDefaultSharedPreferences(this);
+        if(PREFERENCE_INIT == getState() ){
+            SharedPreferences.Editor editor = spf.edit();
+            editor.putString("ip_preference","192.168.XXX.XXX");
+            editor.putString("port_preference", "10000");
+            editor.apply();
+            setState(PREFERENCE_BOOTED);
+        }
 
         sp = new SoundPool( 1, AudioManager.STREAM_MUSIC, 0 );
         sound_id = sp.load(this, R.raw.success, 1 );
 
-        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+        setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);//多分画面回転的な何か
 
         autoFocusHandler = new Handler();
         mCamera = getCameraInstance();
@@ -82,7 +92,6 @@ public class MainActivity extends ActionBarActivity {
         buttons.setVisibility(View.INVISIBLE);
         button.setVisibility(View.VISIBLE);
 
-        /* Instance barcode scanner */
         scanner = new ImageScanner();
         scanner.setConfig(0, Config.X_DENSITY, 3);
         scanner.setConfig(0, Config.Y_DENSITY, 3);
@@ -122,25 +131,34 @@ public class MainActivity extends ActionBarActivity {
 
     }
 
+    private void setState(int state) {
+        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
+        sp.edit().putInt("InitState", state).commit();
+    }
+
+    private int getState() {
+        int state;
+        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
+        state = sp.getInt("InitState", PREFERENCE_INIT);
+        return state;
+    }
+
     public static boolean isNumber(String str){
         Pattern p = Pattern.compile("^[1-9][0-9]*");
         Matcher m = p.matcher(str);
-
         return m.find();
     }
 
     public void kaikei(View v){
         new SendThread(MainActivity.this,"kaikei").start();
-        AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(this);
-        LayoutInflater inflatername = (LayoutInflater)this.getSystemService(
-                LAYOUT_INFLATER_SERVICE);
-        View view =  inflatername.inflate(R.layout.dialog_kaikei,
-                (ViewGroup)findViewById(R.id.dialogname_layout));
+        AlertDialog.Builder adb = new AlertDialog.Builder(this);
+        LayoutInflater inflater = (LayoutInflater)this.getSystemService(LAYOUT_INFLATER_SERVICE);
+        View view =  inflater.inflate(R.layout.dialog_kaikei,(ViewGroup)findViewById(R.id.dialogname_layout));
 
         final EditText et = (EditText)view.findViewById(R.id.editText);
-        alertDialogBuilder.setTitle("受取金額入力");
-        alertDialogBuilder.setView(view);
-        alertDialogBuilder.setPositiveButton("OK",
+        adb.setTitle("受取金額入力");
+        adb.setView(view);
+        adb.setPositiveButton("OK",
                 new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
@@ -151,16 +169,16 @@ public class MainActivity extends ActionBarActivity {
                         }
                     }
                 });
-        alertDialogBuilder.setCancelable(true);
-        alertDialog = alertDialogBuilder.create();
+        adb.setCancelable(true);
+        alertDialog = adb.create();
         alertDialog.show();
     }
 
     public void waribiki(View v){
-        AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(this);
-        LayoutInflater inflatername = (LayoutInflater)this.getSystemService(
+        AlertDialog.Builder adb = new AlertDialog.Builder(this);
+        LayoutInflater inflater = (LayoutInflater)this.getSystemService(
                 LAYOUT_INFLATER_SERVICE);
-        View view =  inflatername.inflate(R.layout.dialog_waribiki,
+        View view =  inflater.inflate(R.layout.dialog_waribiki,
                 (ViewGroup)findViewById(R.id.dialog_waribiki_layout));
 
         view.findViewById(R.id.btn1).setOnClickListener(onClick);
@@ -174,10 +192,10 @@ public class MainActivity extends ActionBarActivity {
         view.findViewById(R.id.btn9).setOnClickListener(onClick);
 
 
-        alertDialogBuilder.setTitle("割引選択");
-        alertDialogBuilder.setView(view);
-        alertDialogBuilder.setCancelable(true);
-        alertDialog = alertDialogBuilder.create();
+        adb.setTitle("割引選択");
+        adb.setView(view);
+        adb.setCancelable(true);
+        alertDialog = adb.create();
         alertDialog.show();
     }
 
@@ -228,24 +246,18 @@ public class MainActivity extends ActionBarActivity {
     };
 
     public void nyuryoku(View v){
-//        new SendThread(MainActivity.this,sym.getData()).start();
-        AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(this);
-        LayoutInflater inflaterInput = (LayoutInflater)this.getSystemService(
-                LAYOUT_INFLATER_SERVICE);
-        View view =  inflaterInput.inflate(R.layout.dialog_input,
-                (ViewGroup)findViewById(R.id.dialog_input_layout));
+        AlertDialog.Builder adb = new AlertDialog.Builder(this);
+        LayoutInflater inflaterInput = (LayoutInflater)this.getSystemService(LAYOUT_INFLATER_SERVICE);
+        View view = inflaterInput.inflate(R.layout.dialog_input,(ViewGroup)findViewById(R.id.dialog_input_layout));
 
         final EditText et = (EditText)view.findViewById(R.id.editText);
-        alertDialogBuilder.setTitle("商品金額入力");
-        alertDialogBuilder.setView(view);
-        alertDialogBuilder.setPositiveButton("OK",
+        adb.setTitle("商品金額入力");
+        adb.setView(view);
+        adb.setPositiveButton("OK",
                 new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
                         String input = et.getEditableText().toString();
-
-
-
                         if (!input.isEmpty() && isNumber(input)) {
                             new SendThread(MainActivity.this, input).start();
                             previewing = false;
@@ -256,8 +268,8 @@ public class MainActivity extends ActionBarActivity {
                         }//else文でエラー書く
                     }
                 });
-        alertDialogBuilder.setCancelable(true);
-        alertDialog = alertDialogBuilder.create();
+        adb.setCancelable(true);
+        alertDialog = adb.create();
         alertDialog.show();
     }
 
@@ -280,8 +292,6 @@ public class MainActivity extends ActionBarActivity {
         finish();
     }
 
-
-    /** A safe way to get an instance of the Camera object. */
     public static Camera getCameraInstance(){
         Camera c = null;
         try {
@@ -303,8 +313,6 @@ public class MainActivity extends ActionBarActivity {
 
     private Runnable doAutoFocus = new Runnable() {
         public void run() {
-//            if (previewing)
-//                mCamera.autoFocus(autoFocusCB);
         }
     };
 
@@ -339,13 +347,13 @@ public class MainActivity extends ActionBarActivity {
         }
     };
 
-    // Mimic continuous auto-focusing
     Camera.AutoFocusCallback autoFocusCB = new Camera.AutoFocusCallback() {
         public void onAutoFocus(boolean success, Camera camera) {
             autoFocusHandler.postDelayed(doAutoFocus, 1000);
         }
     };
-        @Override
+
+    @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.menu_main, menu);
         return true;
@@ -355,6 +363,9 @@ public class MainActivity extends ActionBarActivity {
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
         if (id == R.id.action_settings) {
+            Intent intent = new Intent();
+            intent.setClass(this , Preferences.class);
+            startActivity(intent);
             return true;
         }
 
@@ -362,46 +373,38 @@ public class MainActivity extends ActionBarActivity {
     }
 }
 class SendThread extends Thread{
-    String sendTxt;
-    Context context;
+    private String sendTxt;
+    private Context context;
 
     public SendThread(Context con,String str){
-        sendTxt = str;
-        context = con;
+        this.sendTxt = str;
+        this.context = con;
     }
 
     public void run(){
 
         SharedPreferences spf = PreferenceManager.getDefaultSharedPreferences(context);
-        String ip = spf.getString("ip_preference", "");
+        String ip = spf.getString("ip_preference", "192.168.11.2");
         String port = spf.getString("port_preference", "10342");
-
-        ip = "192.168.10.2";
 
         Socket socket = null;
 
         try {
             socket = new Socket(ip,Integer.parseInt(port));
             PrintWriter pw = new PrintWriter(socket.getOutputStream(),true);
-
-
             pw.println(sendTxt);
-
         } catch (UnknownHostException e) {
+            //送信先が見つからない時
             e.printStackTrace();
         } catch (IOException e) {
             e.printStackTrace();
         }
-
         if( socket != null){
             try {
                 socket.close();
-                socket = null;
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
     }
-
-
 }

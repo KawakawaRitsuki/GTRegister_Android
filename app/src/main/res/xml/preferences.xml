@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen
+    xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <PreferenceCategory
+        android:title="設定">
+
+        <EditTextPreference
+        android:key="ip_preference"
+        android:title="IPアドレス設定"
+        android:summary="接続先のPCのIPアドレス設定"
+        android:dialogTitle="IPアドレス(XXX.XXX.XXX.XXX形式)を入力してください。" />
+
+        <EditTextPreference
+            android:key="port_preference"
+            android:title="ポート設定"
+            android:inputType="number"
+            android:summary="接続先のPCのポート設定"
+            android:dialogTitle="ポート番号(0-65535)を入力してください。（初期設定=10000)" />
+
+    </PreferenceCategory>
+</PreferenceScreen>
