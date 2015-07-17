@@ -11,7 +11,7 @@ import android.hardware.Camera.PreviewCallback;
 import android.media.AudioManager;
 import android.media.SoundPool;
 import android.os.Bundle;
-import android.os.Handler;
+import android.os.Vibrator;
 import android.preference.PreferenceManager;
 import android.support.v7.app.ActionBarActivity;
 import android.view.LayoutInflater;
@@ -44,10 +44,11 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
 
     private Camera mCamera;
     private CameraPreview mPreview;
-    private Handler autoFocusHandler;
     private SoundPool sp;
     private int sound_id;
     private AlertDialog alertDialog;
+
+    private Vibrator vib;
 
     public static LinearLayout buttons;
     public static Button button;
@@ -69,6 +70,8 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        vib = (Vibrator) getSystemService(VIBRATOR_SERVICE);
+
         SharedPreferences spf = PreferenceManager.getDefaultSharedPreferences(this);
         if(PREFERENCE_INIT == getState() ){
             SharedPreferences.Editor editor = spf.edit();
@@ -83,7 +86,6 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
 
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);//多分画面回転的な何か
 
-        autoFocusHandler = new Handler();
         mCamera = getCameraInstance();
 
         button = (Button)findViewById(R.id.button);
@@ -266,10 +268,7 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
 
     public static Camera getCameraInstance(){
         Camera c = null;
-        try {
-            c = Camera.open();
-        } catch (Exception e){
-        }
+        c = Camera.open();
         return c;
     }
 
@@ -302,6 +301,7 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
 
                 SymbolSet syms = scanner.getResults();
                 for (Symbol sym : syms) {
+                    vib.vibrate(100);
                     sp.play(sound_id, 1.0F, 1.0F, 0, 0, 1.0F);
                     if(isNumber(sym.getData())) {
                         Toast.makeText(MainActivity.this, sym.getData(), Toast.LENGTH_SHORT).show();
