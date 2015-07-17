@@ -40,7 +40,7 @@ import java.net.UnknownHostException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class MainActivity extends ActionBarActivity {
+public class MainActivity extends ActionBarActivity implements View.OnClickListener{
 
     private Camera mCamera;
     private CameraPreview mPreview;
@@ -96,7 +96,7 @@ public class MainActivity extends ActionBarActivity {
         scanner.setConfig(0, Config.X_DENSITY, 3);
         scanner.setConfig(0, Config.Y_DENSITY, 3);
 
-        mPreview = new CameraPreview(this, mCamera, previewCb, autoFocusCB);
+        mPreview = new CameraPreview(this, mCamera, previewCb, null);
         FrameLayout preview = (FrameLayout)findViewById(R.id.cameraPreview);
 
         preview.addView(mPreview);
@@ -111,7 +111,7 @@ public class MainActivity extends ActionBarActivity {
                     mCamera.startPreview();
                     previewing = true;
                     mCamera.cancelAutoFocus();
-                    mCamera.autoFocus(autoFocusCB);
+                    mCamera.autoFocus(null);
                     buttons.setVisibility(View.INVISIBLE);
                     button.setVisibility(View.VISIBLE);
                 }else{
@@ -120,7 +120,7 @@ public class MainActivity extends ActionBarActivity {
                         public void run() {
                             if (previewing) {
                                 mCamera.cancelAutoFocus();
-                                mCamera.autoFocus(autoFocusCB);
+                                mCamera.autoFocus(null);
                             }
                         }
                     }).start();
@@ -181,16 +181,15 @@ public class MainActivity extends ActionBarActivity {
         View view =  inflater.inflate(R.layout.dialog_waribiki,
                 (ViewGroup)findViewById(R.id.dialog_waribiki_layout));
 
-        view.findViewById(R.id.btn1).setOnClickListener(onClick);
-        view.findViewById(R.id.btn2).setOnClickListener(onClick);
-        view.findViewById(R.id.btn3).setOnClickListener(onClick);
-        view.findViewById(R.id.btn4).setOnClickListener(onClick);
-        view.findViewById(R.id.btn5).setOnClickListener(onClick);
-        view.findViewById(R.id.btn6).setOnClickListener(onClick);
-        view.findViewById(R.id.btn7).setOnClickListener(onClick);
-        view.findViewById(R.id.btn8).setOnClickListener(onClick);
-        view.findViewById(R.id.btn9).setOnClickListener(onClick);
-
+        view.findViewById(R.id.btn1).setOnClickListener(this);
+        view.findViewById(R.id.btn2).setOnClickListener(this);
+        view.findViewById(R.id.btn3).setOnClickListener(this);
+        view.findViewById(R.id.btn4).setOnClickListener(this);
+        view.findViewById(R.id.btn5).setOnClickListener(this);
+        view.findViewById(R.id.btn6).setOnClickListener(this);
+        view.findViewById(R.id.btn7).setOnClickListener(this);
+        view.findViewById(R.id.btn8).setOnClickListener(this);
+        view.findViewById(R.id.btn9).setOnClickListener(this);
 
         adb.setTitle("割引選択");
         adb.setView(view);
@@ -199,52 +198,25 @@ public class MainActivity extends ActionBarActivity {
         alertDialog.show();
     }
 
-    public View.OnClickListener onClick = new View.OnClickListener() {
-        @Override
-        public void onClick(View v) {
-            int waribiki = 0;
-            switch (v.getId()){
-                case R.id.btn1:
-                    waribiki = 1;
-                    break;
-                case R.id.btn2:
-                    waribiki = 2;
-                    break;
-                case R.id.btn3:
-                    waribiki = 3;
-                    break;
-                case R.id.btn4:
-                    waribiki = 4;
-                    break;
-                case R.id.btn5:
-                    waribiki = 5;
-                    break;
-                case R.id.btn6:
-                    waribiki = 6;
-                    break;
-                case R.id.btn7:
-                    waribiki = 7;
-                    break;
-                case R.id.btn8:
-                    waribiki = 8;
-                    break;
-                case R.id.btn9:
-                    waribiki = 9;
-                    break;
-            }
-            new SendThread(MainActivity.this,waribiki+"割引").start();
-            alertDialog.dismiss();
-            barcodeScanned = false;
-            mCamera.setPreviewCallback(previewCb);
-            mCamera.startPreview();
-            previewing = true;
-            mCamera.cancelAutoFocus();
-            mCamera.autoFocus(autoFocusCB);
-            buttons.setVisibility(View.INVISIBLE);
-            button.setVisibility(View.VISIBLE);
-        }
-    };
+    @Override
+    public void onClick(View v) {
 
+        Button button = (Button)v.getRootView().findViewById(v.getId());
+        String btnTxt = button.getText().toString().substring(0,1);
+
+        new SendThread(MainActivity.this,Integer.parseInt(btnTxt)+"割引").start();
+        System.out.println(Integer.parseInt(btnTxt)+"割引");
+        alertDialog.dismiss();
+        barcodeScanned = false;
+        mCamera.setPreviewCallback(previewCb);
+        mCamera.startPreview();
+        previewing = true;
+        mCamera.cancelAutoFocus();
+        mCamera.autoFocus(null);
+        buttons.setVisibility(View.INVISIBLE);
+        button.setVisibility(View.VISIBLE);
+    }
+    
     public void nyuryoku(View v){
         AlertDialog.Builder adb = new AlertDialog.Builder(this);
         LayoutInflater inflaterInput = (LayoutInflater)this.getSystemService(LAYOUT_INFLATER_SERVICE);
@@ -279,7 +251,7 @@ public class MainActivity extends ActionBarActivity {
         mCamera.startPreview();
         previewing = true;
         mCamera.cancelAutoFocus();
-        mCamera.autoFocus(autoFocusCB);
+        mCamera.autoFocus(null);
         buttons.setVisibility(View.INVISIBLE);
         button.setVisibility(View.VISIBLE);
         new SendThread(MainActivity.this,"cancel").start();
@@ -310,12 +282,6 @@ public class MainActivity extends ActionBarActivity {
         }
     }
 
-
-    private Runnable doAutoFocus = new Runnable() {
-        public void run() {
-        }
-    };
-
     Camera.PreviewCallback previewCb = new PreviewCallback() {
         public void onPreviewFrame(byte[] data, Camera camera) {
             Camera.Parameters parameters = camera.getParameters();
@@ -344,12 +310,6 @@ public class MainActivity extends ActionBarActivity {
                     barcodeScanned = true;
                 }
             }
-        }
-    };
-
-    Camera.AutoFocusCallback autoFocusCB = new Camera.AutoFocusCallback() {
-        public void onAutoFocus(boolean success, Camera camera) {
-            autoFocusHandler.postDelayed(doAutoFocus, 1000);
         }
     };
 
