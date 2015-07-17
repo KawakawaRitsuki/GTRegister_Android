@@ -25,6 +25,7 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import net.sourceforge.zbar.Config;
@@ -155,29 +156,63 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
     }
 
     public void kaikei(View v){
-        
-        new SendThread(MainActivity.this,"kaikei").start();
+
+        int temp = 0;
+        for(int i:list){
+            temp = temp + i;
+        }
+
+        final int sum = temp;
+
+        new SendThread(MainActivity.this,"goukei," + temp).start();
+
         AlertDialog.Builder adb = new AlertDialog.Builder(this);
         LayoutInflater inflater = (LayoutInflater)this.getSystemService(LAYOUT_INFLATER_SERVICE);
-        View view =  inflater.inflate(R.layout.dialog_kaikei,(ViewGroup)findViewById(R.id.dialogname_layout));
+        View view = inflater.inflate(R.layout.dialog_kaikei,(ViewGroup)findViewById(R.id.dialog_kaikei_layout));
 
         final EditText et = (EditText)view.findViewById(R.id.editText);
-        adb.setTitle("受取金額入力");
+        adb.setTitle("合計金額は" + sum + "円です");
         adb.setView(view);
         adb.setPositiveButton("OK",
                 new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
                         String uketori = et.getEditableText().toString();
+                        if (!uketori.isEmpty() && Integer.parseInt(uketori) >= sum) {
+                            int change = Integer.parseInt(uketori) - sum;
+                            new SendThread(MainActivity.this, "kaikei," + Integer.parseInt(uketori) + "," + sum + "," + change).start();
 
-                        if (!uketori.isEmpty() && isNumber(uketori)) {
-                            new SendThread(MainActivity.this, "uketori," + uketori).start();
+                            AlertDialog.Builder adb = new AlertDialog.Builder(MainActivity.this);
+                            LayoutInflater inflater = (LayoutInflater) MainActivity.this.getSystemService(LAYOUT_INFLATER_SERVICE);
+                            View view = inflater.inflate(R.layout.dialog_change, (ViewGroup) findViewById(R.id.dialog_change_layout));
+
+                            TextView tv1 = (TextView)view.findViewById(R.id.azukari);
+                            TextView tv2 = (TextView)view.findViewById(R.id.genkei);
+                            TextView tv3 = (TextView)view.findViewById(R.id.change);
+
+                            tv1.setText(uketori + "円");
+                            tv2.setText(sum + "円");
+                            tv3.setText(change + "円");
+
+                            adb.setTitle("会計");
+                            adb.setView(view);
+                            adb.setPositiveButton("OK",
+                                    new DialogInterface.OnClickListener() {
+                                        @Override
+                                        public void onClick(DialogInterface dialog, int which) {
+                                            list.removeAll(list);
+                                        }
+                                    });
+                            adb.setCancelable(false);
+                            alertDialog = adb.create();
+                            alertDialog.show();
+
                         }
+
                     }
                 });
         adb.setCancelable(true);
-        alertDialog = adb.create();
-        alertDialog.show();
+        adb.show();
     }
 
     public void waribiki(View v){
