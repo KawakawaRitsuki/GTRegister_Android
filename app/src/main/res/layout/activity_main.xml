@@ -33,7 +33,12 @@
                 android:layout_width="match_parent"
                 android:layout_height="0dp"
                 android:layout_gravity="center_horizontal"
-                android:layout_weight="3">
+                android:layout_weight="3"
+
+                android:layout_marginTop="1dp"
+                android:layout_marginBottom="1dp"
+                android:layout_marginLeft="3dp"
+                android:layout_marginRight="3dp" >
 
                 <LinearLayout
                     android:orientation="horizontal"
@@ -45,10 +50,15 @@
                     <Button
                         android:layout_width="0dp"
                         android:layout_height="match_parent"
-                        android:text="最後の商品を訂正"
+                        android:text="訂正"
                         android:id="@+id/button4"
                         android:layout_weight="1"
-                        android:onClick="cancel" />
+
+                        android:textSize="24dp"
+                        android:background="@drawable/button"
+                        android:onClick="cancel"
+                        android:layout_marginRight="1dp"
+                        android:textColor="#c80009ee" />
 
                     <Button
                         android:layout_width="0dp"
@@ -57,7 +67,12 @@
                         android:id="@+id/button2"
                         android:layout_gravity="center_horizontal"
                         android:layout_weight="1"
-                        android:onClick="waribiki" />
+
+                        android:textSize="24dp"
+                        android:background="@drawable/button"
+                        android:onClick="waribiki"
+                        android:layout_marginLeft="1dp"
+                        android:textColor="#c80009ee" />
 
                 </LinearLayout>
 
@@ -68,7 +83,11 @@
                     android:id="@+id/button"
                     android:layout_weight="1"
                     android:onClick="nyuryoku"
-                    android:layout_gravity="right" />
+                    android:layout_gravity="right"
+
+                    android:background="@drawable/button"
+                    android:textSize="24dp"
+                    android:textColor="#c80009ee" />
             </FrameLayout>
 
             <Button
@@ -78,7 +97,14 @@
                 android:id="@+id/button3"
                 android:layout_gravity="right"
                 android:layout_weight="3"
-                android:onClick="kaikei" />
+                android:onClick="kaikei"
+                android:background="@drawable/button"
+                android:textSize="24dp"
+                android:textColor="#c80009ee"
+                android:layout_marginTop="1dp"
+                android:layout_marginBottom="1dp"
+                android:layout_marginLeft="3dp"
+                android:layout_marginRight="3dp" />
 
         </LinearLayout>
 

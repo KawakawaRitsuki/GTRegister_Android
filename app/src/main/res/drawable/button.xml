@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector
+    xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- ボタンが押されている -->
+    <item android:state_pressed="true">
+        <layer-list>
+            <item>
+                <shape
+                    xmlns:android="http://schemas.android.com/apk/res/android"
+                    android:shape="rectangle">
+                    <gradient
+                        android:angle="270"
+                        android:startColor="#D87a74ee"
+                        android:endColor="#D8eeffff"
+                        android:type="linear" />
+                    <corners
+                        android:radius="4dip" />
+                    <stroke
+                        android:width="1dip"
+                        android:color="#D80e1aff"/>
+                </shape>
+            </item>
+        </layer-list>
+    </item>
+
+    <!-- ボタンが押されていない -->
+    <item android:state_pressed="false">
+        <layer-list>
+            <item>
+                <shape
+                    xmlns:android="http://schemas.android.com/apk/res/android"
+                    android:shape="rectangle">
+                    <gradient
+                        android:angle="270"
+                        android:endColor="#D87a74ee"
+                        android:startColor="#D8eeffff"
+                        android:type="linear" />
+                    <corners
+                        android:radius="4dip" />
+                    <stroke
+                        android:width="1dip"
+                        android:color="#D80e1aff"/>
+                </shape>
+            </item>
+        </layer-list>
+    </item>
+</selector>

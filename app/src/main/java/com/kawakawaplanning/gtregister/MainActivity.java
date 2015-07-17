@@ -152,6 +152,7 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
     }
 
     public void kaikei(View v){
+        
         new SendThread(MainActivity.this,"kaikei").start();
         AlertDialog.Builder adb = new AlertDialog.Builder(this);
         LayoutInflater inflater = (LayoutInflater)this.getSystemService(LAYOUT_INFLATER_SERVICE);
@@ -237,14 +238,15 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
                             previewing = false;
                             mCamera.setPreviewCallback(null);
                             mCamera.stopPreview();
+
                             buttons.setVisibility(View.VISIBLE);
                             button.setVisibility(View.INVISIBLE);
+                            barcodeScanned = true;
                         }//else文でエラー書く
                     }
                 });
         adb.setCancelable(true);
-        alertDialog = adb.create();
-        alertDialog.show();
+        adb.show();
     }
 
     public void cancel(View v){
