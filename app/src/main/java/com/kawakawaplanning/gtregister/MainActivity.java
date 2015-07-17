@@ -37,6 +37,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -49,6 +50,7 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
     private AlertDialog alertDialog;
 
     private Vibrator vib;
+    private ArrayList<Integer> list;
 
     public static LinearLayout buttons;
     public static Button button;
@@ -71,6 +73,7 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
         setContentView(R.layout.activity_main);
 
         vib = (Vibrator) getSystemService(VIBRATOR_SERVICE);
+        list = new ArrayList<>();
 
         SharedPreferences spf = PreferenceManager.getDefaultSharedPreferences(this);
         if(PREFERENCE_INIT == getState() ){
@@ -86,7 +89,7 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
 
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);//多分画面回転的な何か
 
-        mCamera = getCameraInstance();
+        mCamera = Camera.open();
 
         button = (Button)findViewById(R.id.button);
         buttons = (LinearLayout)findViewById(R.id.buttons);
@@ -242,6 +245,7 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
                             buttons.setVisibility(View.VISIBLE);
                             button.setVisibility(View.INVISIBLE);
                             barcodeScanned = true;
+                            list.add(Integer.parseInt(input));
                         }//else文でエラー書く
                     }
                 });
@@ -268,11 +272,6 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
         finish();
     }
 
-    public static Camera getCameraInstance(){
-        Camera c = null;
-        c = Camera.open();
-        return c;
-    }
 
     private void releaseCamera() {
         if (mCamera != null) {
@@ -295,21 +294,23 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
             int result = scanner.scanImage(barcode);
 
             if (result != 0) {
-                previewing = false;
-                mCamera.setPreviewCallback(null);
-                mCamera.stopPreview();
-                buttons.setVisibility(View.VISIBLE);
-                button.setVisibility(View.INVISIBLE);
-
                 SymbolSet syms = scanner.getResults();
                 for (Symbol sym : syms) {
-                    vib.vibrate(100);
-                    sp.play(sound_id, 1.0F, 1.0F, 0, 0, 1.0F);
                     if(isNumber(sym.getData())) {
+
+                        previewing = false;
+                        mCamera.setPreviewCallback(null);
+                        mCamera.stopPreview();
+                        buttons.setVisibility(View.VISIBLE);
+                        button.setVisibility(View.INVISIBLE);
+                        vib.vibrate(100);
+                        sp.play(sound_id, 1.0F, 1.0F, 0, 0, 1.0F);
                         Toast.makeText(MainActivity.this, sym.getData(), Toast.LENGTH_SHORT).show();
                         new SendThread(MainActivity.this, sym.getData()).start();
+                        barcodeScanned = true;
+                        list.add(Integer.parseInt(sym.getData()));
+
                     }
-                    barcodeScanned = true;
                 }
             }
         }
