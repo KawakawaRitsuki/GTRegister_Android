@@ -43,7 +43,7 @@ import java.util.ArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class MainActivity extends ActionBarActivity implements View.OnClickListener{
+public class MainActivity extends ActionBarActivity {
 
     /*
      * このアプリケーションの命名規則
@@ -136,7 +136,48 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
         mVibrator          = (Vibrator) getSystemService(VIBRATOR_SERVICE);
         mSharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
 
+    }
 
+    @Override
+    protected void onStart() {
+        super.onStart();
+
+        //画面の操作
+        setVisibilitys(0);
+
+        mScanner.setConfig(0, Config.X_DENSITY, 3);
+        mScanner.setConfig(0, Config.Y_DENSITY, 3);
+        mCameraPreview.addView(mPreview);
+
+        mGoodsLv.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
+            @Override
+            public boolean onItemLongClick(AdapterView<?> parent, View view, final int position, long id) {
+                AlertDialog.Builder adb = new AlertDialog.Builder(MainActivity.this);
+                adb.setTitle("Are you sure?");
+                adb.setMessage(mGoodsLv.getItemAtPosition(position).toString() + "を削除しますか？");
+                adb.setPositiveButton("OK",
+                        new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                new SendThread(MainActivity.this, "delete," + position).start();
+                                mAmountsList.remove(position);
+                                ArrayAdapter<String> tempAdapter = new ArrayAdapter<String>(MainActivity.this, R.layout.list_item);
+                                for (int i = 0; i != mGoodsNameAdapter.getCount(); i++) {
+                                    if (i != position)
+                                        tempAdapter.add(mGoodsNameAdapter.getItem(i));
+                                }
+                                mGoodsNameAdapter.clear();
+                                mGoodsNameAdapter = tempAdapter;
+                                mGoodsLv.setAdapter(mGoodsNameAdapter);
+
+                            }
+                        });
+                adb.setNegativeButton("Cancel", null);
+                adb.setCancelable(true);
+                adb.show();
+                return false;
+            }
+        });
 
         if(mSharedPreferences.getBoolean("booted",false) == false ){
             SharedPreferences.Editor editor = mSharedPreferences.edit();
@@ -165,53 +206,6 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
                         }
                     }
                 }
-                return false;
-            }
-        });
-
-    }
-
-    @Override
-    protected void onStart() {
-        super.onStart();
-
-        //画面の操作
-        setVisibilitys(0);
-
-        mScanner.setConfig(0, Config.X_DENSITY, 3);
-        mScanner.setConfig(0, Config.Y_DENSITY, 3);
-        mCameraPreview.addView(mPreview);
-
-        mGoodsLv.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
-            @Override
-            public boolean onItemLongClick(AdapterView<?> parent, View view, final int position, long id) {
-                AlertDialog.Builder adb = new AlertDialog.Builder(MainActivity.this);
-                adb.setTitle("Are you sure?");
-                adb.setMessage(mGoodsLv.getItemAtPosition(position).toString() + "を削除してもいいですか？");
-                adb.setPositiveButton("OK",
-                        new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialog, int which) {
-                                new SendThread(MainActivity.this, "delete," + position).start();
-                                mAmountsList.remove(position);
-
-                                ArrayAdapter<String> tempAdapter = new ArrayAdapter<String>(MainActivity.this, R.layout.list_item);
-
-                                for (int i = 0; i != mGoodsNameAdapter.getCount(); i++) {
-                                    if (i != position)
-                                        tempAdapter.add(mGoodsNameAdapter.getItem(i));
-                                }
-
-                                mGoodsNameAdapter.clear();
-                                mGoodsNameAdapter = tempAdapter;
-
-                                mGoodsLv.setAdapter(mGoodsNameAdapter);
-
-                            }
-                        });
-                adb.setNegativeButton("Cancel", null);
-                adb.setCancelable(true);
-                adb.show();
                 return false;
             }
         });
@@ -244,7 +238,7 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
         return m.find();
     }
 
-    public void kaikei(View v){
+    public void bill(View v){
 
         int temp = 0;
         for(int i: mAmountsList){
@@ -305,22 +299,12 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
         adb.show();
     }
 
-    public void waribiki(View v){
+    public void discount(View v){
         AlertDialog.Builder adb = new AlertDialog.Builder(this);
         LayoutInflater inflater = (LayoutInflater)this.getSystemService(
                 LAYOUT_INFLATER_SERVICE);
         View view =  inflater.inflate(R.layout.dialog_waribiki,
                 (ViewGroup)findViewById(R.id.dialog_waribiki_layout));
-
-        view.findViewById(R.id.btn1).setOnClickListener(this);
-        view.findViewById(R.id.btn2).setOnClickListener(this);
-        view.findViewById(R.id.btn3).setOnClickListener(this);
-        view.findViewById(R.id.btn4).setOnClickListener(this);
-        view.findViewById(R.id.btn5).setOnClickListener(this);
-        view.findViewById(R.id.btn6).setOnClickListener(this);
-        view.findViewById(R.id.btn7).setOnClickListener(this);
-        view.findViewById(R.id.btn8).setOnClickListener(this);
-        view.findViewById(R.id.btn9).setOnClickListener(this);
 
         adb.setTitle("割引選択");
         adb.setView(view);
@@ -329,8 +313,7 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
         alertDialog.show();
     }
 
-    @Override
-    public void onClick(View v) {
+    public void onDiscountClick(View v) {
 
         Button button = (Button)v.getRootView().findViewById(v.getId());
         String btnTxt = button.getText().toString().substring(0, 1);
@@ -376,12 +359,11 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
 
         new SendThread(MainActivity.this,"waribiki," + temp + "," + mAmountsList.get(0) + "," + Integer.parseInt(btnTxt)).start();
 
-
         alertDialog.dismiss();
         setVisibilitys(3);
     }
     
-    public void nyuryoku(View v){
+    public void input(View v){
         AlertDialog.Builder adb = new AlertDialog.Builder(this);
         LayoutInflater inflaterInput = (LayoutInflater)this.getSystemService(LAYOUT_INFLATER_SERVICE);
         View view = inflaterInput.inflate(R.layout.dialog_input,(ViewGroup)findViewById(R.id.dialog_input_layout));
