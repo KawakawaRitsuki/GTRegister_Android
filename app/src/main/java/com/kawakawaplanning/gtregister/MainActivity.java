@@ -289,8 +289,6 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
         Button button = (Button)v.getRootView().findViewById(v.getId());
         String btnTxt = button.getText().toString().substring(0, 1);
 
-        new SendThread(MainActivity.this,Integer.parseInt(btnTxt)+"割引").start();
-
         int temp = list.get(0);
         list.remove(0);
 
@@ -306,17 +304,13 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
 
         adapter.clear();
         adapter = tempAdapter;
-        adapter.insert(temp+"円商品 -> " +list.get(0)+"円("+ Integer.parseInt(btnTxt) + "割引)" ,0);
+        adapter.insert(temp+"円商品 ¥" +list.get(0)+"- ("+ Integer.parseInt(btnTxt) + "割引)" ,0);
         lv.setAdapter(adapter);
+
+        new SendThread(MainActivity.this,"waribiki," + temp + "," + list.get(0) + "," + Integer.parseInt(btnTxt)).start();
 
 
         alertDialog.dismiss();
-        barcodeScanned = false;
-        mCamera.setPreviewCallback(previewCb);
-        mCamera.startPreview();
-        previewing = true;
-        mCamera.cancelAutoFocus();
-        mCamera.autoFocus(null);
         waribikiBtn.setVisibility(View.INVISIBLE);
         button.setVisibility(View.VISIBLE);
     }
@@ -344,7 +338,7 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
                             button.setVisibility(View.INVISIBLE);
                             barcodeScanned = true;
                             list.add(0, Integer.parseInt(input));
-                            adapter.insert(input + "円商品", 0);
+                            adapter.insert(input + "円商品 ¥" + input + "-", 0);
                             lv.setAdapter(adapter);
                         }//else文でエラー書く
                     }
@@ -365,25 +359,11 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
 
     }
 
-//    public void cancel(View v){
-//        barcodeScanned = false;
-//        mCamera.setPreviewCallback(previewCb);
-//        mCamera.startPreview();
-//        previewing = true;
-//        mCamera.cancelAutoFocus();
-//        mCamera.autoFocus(null);
-//        button.setVisibility(View.INVISIBLE);
-//        button.setVisibility(View.VISIBLE);
-//        new SendThread(MainActivity.this,"cancel").start();
-//    }
-
-
     public void onPause() {
         super.onPause();
         releaseCamera();
         finish();
     }
-
 
     private void releaseCamera() {
         if (mCamera != null) {
@@ -421,7 +401,7 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
                         new SendThread(MainActivity.this, sym.getData()).start();
                         barcodeScanned = true;
                         list.add(0,Integer.parseInt(sym.getData()));
-                        adapter.insert(sym.getData() + "円商品",0);
+                        adapter.insert(sym.getData() + "円商品 ¥" + sym.getData() + "-",0);
                         lv.setAdapter(adapter);
                     }
                 }
