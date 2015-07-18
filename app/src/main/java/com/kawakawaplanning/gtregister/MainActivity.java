@@ -21,10 +21,12 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.FrameLayout;
-import android.widget.LinearLayout;
+import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -49,11 +51,13 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
     private SoundPool sp;
     private int sound_id;
     private AlertDialog alertDialog;
+    private ArrayAdapter<String> adapter;
 
     private Vibrator vib;
     private ArrayList<Integer> list;
+    private ListView lv;
 
-    public static LinearLayout buttons;
+    public static Button waribikiBtn;
     public static Button button;
 
     ImageScanner scanner;
@@ -72,6 +76,44 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);//画面常時点灯のアレ
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        adapter = new ArrayAdapter<String>(this,
+                R.layout.list_item);
+
+        lv = (ListView) findViewById(R.id.listView);
+        lv.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
+            @Override
+            public boolean onItemLongClick(AdapterView<?> parent, View view, final int position, long id) {
+                AlertDialog.Builder adb = new AlertDialog.Builder(MainActivity.this);
+                adb.setTitle("Are you sure?");
+                adb.setMessage(lv.getItemAtPosition(position).toString() + "を削除してもいいですか？");
+                adb.setPositiveButton("OK",
+                        new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                new SendThread(MainActivity.this, "delete," + position).start();
+                                list.remove(position);
+
+                                ArrayAdapter<String> tempAdapter = new ArrayAdapter<String>(MainActivity.this, R.layout.list_item);
+
+                                for(int i = 0; i != adapter.getCount();i++){
+                                    if(i != position)
+                                        tempAdapter.add(adapter.getItem(i));
+                                }
+
+                                adapter.clear();
+                                adapter = tempAdapter;
+
+                                lv.setAdapter(adapter);
+
+                            }
+                        });
+                adb.setNegativeButton("Cancel",null);
+                adb.setCancelable(true);
+                adb.show();
+                return false;
+            }
+        });
 
         vib = (Vibrator) getSystemService(VIBRATOR_SERVICE);
         list = new ArrayList<>();
@@ -93,9 +135,9 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
         mCamera = Camera.open();
 
         button = (Button)findViewById(R.id.button);
-        buttons = (LinearLayout)findViewById(R.id.buttons);
+        waribikiBtn = (Button)findViewById(R.id.button2);
 
-        buttons.setVisibility(View.INVISIBLE);
+        waribikiBtn.setVisibility(View.INVISIBLE);
         button.setVisibility(View.VISIBLE);
 
         scanner = new ImageScanner();
@@ -118,7 +160,7 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
                     previewing = true;
                     mCamera.cancelAutoFocus();
                     mCamera.autoFocus(null);
-                    buttons.setVisibility(View.INVISIBLE);
+                    waribikiBtn.setVisibility(View.INVISIBLE);
                     button.setVisibility(View.VISIBLE);
                 }else{
                     new Thread(new Runnable() {
@@ -243,10 +285,29 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
     public void onClick(View v) {
 
         Button button = (Button)v.getRootView().findViewById(v.getId());
-        String btnTxt = button.getText().toString().substring(0,1);
+        String btnTxt = button.getText().toString().substring(0, 1);
 
         new SendThread(MainActivity.this,Integer.parseInt(btnTxt)+"割引").start();
-        System.out.println(Integer.parseInt(btnTxt)+"割引");
+
+        int temp = list.get(0);
+        list.remove(0);
+
+        int wari = 10 - Integer.parseInt(btnTxt);
+        list.add(0,temp / 10 * wari);
+
+        ArrayAdapter<String> tempAdapter = new ArrayAdapter<String>(MainActivity.this, R.layout.list_item);
+
+        for(int i = 0; i != adapter.getCount();i++){
+            if(i != 0)
+                tempAdapter.add(adapter.getItem(i));
+        }
+
+        adapter.clear();
+        adapter = tempAdapter;
+        adapter.insert(temp+"円商品 -> " +list.get(0)+"円("+ Integer.parseInt(btnTxt) + "割引)" ,0);
+        lv.setAdapter(adapter);
+
+
         alertDialog.dismiss();
         barcodeScanned = false;
         mCamera.setPreviewCallback(previewCb);
@@ -254,7 +315,7 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
         previewing = true;
         mCamera.cancelAutoFocus();
         mCamera.autoFocus(null);
-        buttons.setVisibility(View.INVISIBLE);
+        waribikiBtn.setVisibility(View.INVISIBLE);
         button.setVisibility(View.VISIBLE);
     }
     
@@ -277,10 +338,12 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
                             mCamera.setPreviewCallback(null);
                             mCamera.stopPreview();
 
-                            buttons.setVisibility(View.VISIBLE);
+                            waribikiBtn.setVisibility(View.VISIBLE);
                             button.setVisibility(View.INVISIBLE);
                             barcodeScanned = true;
-                            list.add(Integer.parseInt(input));
+                            list.add(0,Integer.parseInt(input));
+                            adapter.insert(input + "円商品",0);
+                            lv.setAdapter(adapter);
                         }//else文でエラー書く
                     }
                 });
@@ -288,17 +351,17 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
         adb.show();
     }
 
-    public void cancel(View v){
-        barcodeScanned = false;
-        mCamera.setPreviewCallback(previewCb);
-        mCamera.startPreview();
-        previewing = true;
-        mCamera.cancelAutoFocus();
-        mCamera.autoFocus(null);
-        buttons.setVisibility(View.INVISIBLE);
-        button.setVisibility(View.VISIBLE);
-        new SendThread(MainActivity.this,"cancel").start();
-    }
+//    public void cancel(View v){
+//        barcodeScanned = false;
+//        mCamera.setPreviewCallback(previewCb);
+//        mCamera.startPreview();
+//        previewing = true;
+//        mCamera.cancelAutoFocus();
+//        mCamera.autoFocus(null);
+//        button.setVisibility(View.INVISIBLE);
+//        button.setVisibility(View.VISIBLE);
+//        new SendThread(MainActivity.this,"cancel").start();
+//    }
 
 
     public void onPause() {
@@ -336,15 +399,16 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
                         previewing = false;
                         mCamera.setPreviewCallback(null);
                         mCamera.stopPreview();
-                        buttons.setVisibility(View.VISIBLE);
+                        waribikiBtn.setVisibility(View.VISIBLE);
                         button.setVisibility(View.INVISIBLE);
                         vib.vibrate(100);
                         sp.play(sound_id, 1.0F, 1.0F, 0, 0, 1.0F);
                         Toast.makeText(MainActivity.this, sym.getData(), Toast.LENGTH_SHORT).show();
                         new SendThread(MainActivity.this, sym.getData()).start();
                         barcodeScanned = true;
-                        list.add(Integer.parseInt(sym.getData()));
-
+                        list.add(0,Integer.parseInt(sym.getData()));
+                        adapter.insert(sym.getData() + "円商品",0);
+                        lv.setAdapter(adapter);
                     }
                 }
             }
