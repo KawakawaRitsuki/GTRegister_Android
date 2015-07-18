@@ -168,7 +168,9 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
                         public void run() {
                             if (previewing) {
                                 mCamera.cancelAutoFocus();
-                                mCamera.autoFocus(null);
+                                try{
+                                    mCamera.autoFocus(null);
+                                }catch (RuntimeException e){}
                             }
                         }
                     }).start();
@@ -341,14 +343,26 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
                             waribikiBtn.setVisibility(View.VISIBLE);
                             button.setVisibility(View.INVISIBLE);
                             barcodeScanned = true;
-                            list.add(0,Integer.parseInt(input));
-                            adapter.insert(input + "円商品",0);
+                            list.add(0, Integer.parseInt(input));
+                            adapter.insert(input + "円商品", 0);
                             lv.setAdapter(adapter);
                         }//else文でエラー書く
                     }
                 });
         adb.setCancelable(true);
-        adb.show();
+
+        final AlertDialog ad = adb.create();
+        et.setOnFocusChangeListener(new View.OnFocusChangeListener() {
+            @Override
+            public void onFocusChange(View v, boolean hasFocus) {
+                if (hasFocus) {
+                    ad.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE);
+                }
+            }
+        });
+
+        ad.show();
+
     }
 
 //    public void cancel(View v){
