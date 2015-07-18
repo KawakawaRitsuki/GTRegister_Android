@@ -52,12 +52,14 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
     private int sound_id;
     private AlertDialog alertDialog;
     private ArrayAdapter<String> adapter;
+    private SharedPreferences spf;
 
     private Vibrator vib;
     private ArrayList<Integer> list;
     private ListView lv;
 
     public static Button waribikiBtn;
+    public static Button kaikeiBtn;
     public static Button button;
 
     ImageScanner scanner;
@@ -118,7 +120,7 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
         vib = (Vibrator) getSystemService(VIBRATOR_SERVICE);
         list = new ArrayList<>();
 
-        SharedPreferences spf = PreferenceManager.getDefaultSharedPreferences(this);
+        spf = PreferenceManager.getDefaultSharedPreferences(this);
         if(PREFERENCE_INIT == getState() ){
             SharedPreferences.Editor editor = spf.edit();
             editor.putString("ip_preference","192.168.XXX.XXX");
@@ -136,8 +138,10 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
 
         button = (Button)findViewById(R.id.button);
         waribikiBtn = (Button)findViewById(R.id.button2);
+        kaikeiBtn = (Button)findViewById(R.id.button3);
 
         waribikiBtn.setVisibility(View.INVISIBLE);
+        kaikeiBtn.setVisibility(View.VISIBLE);
         button.setVisibility(View.VISIBLE);
 
         scanner = new ImageScanner();
@@ -161,6 +165,7 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
                     mCamera.cancelAutoFocus();
                     mCamera.autoFocus(null);
                     waribikiBtn.setVisibility(View.INVISIBLE);
+                    kaikeiBtn.setVisibility(View.VISIBLE);
                     button.setVisibility(View.VISIBLE);
                 }else{
                     new Thread(new Runnable() {
@@ -245,11 +250,12 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
                                         @Override
                                         public void onClick(DialogInterface dialog, int which) {
                                             list.removeAll(list);
+                                            adapter.clear();
+                                            kaikeiBtn.setVisibility(View.INVISIBLE);
                                         }
                                     });
                             adb.setCancelable(false);
-                            alertDialog = adb.create();
-                            alertDialog.show();
+                            adb.show();
 
                         }
 
@@ -293,7 +299,28 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
         list.remove(0);
 
         int wari = 10 - Integer.parseInt(btnTxt);
-        list.add(0,temp / 10 * wari);
+        double a = temp/10;
+        double b = a * wari;
+        double c = b / 10;
+
+        String round = spf.getString("round","normal");
+
+        if (round.equals("round")) {
+            long l = Math.round(c);
+            int i = (int) (l * 10);
+            list.add(0,i);
+        }else if (round.equals("ceil")) {
+            double d = Math.ceil(c);
+            int i = (int) (d * 10);
+            list.add(0,i);
+        }else if (round.equals("floor")) {
+            double d = Math.floor(c);
+            int i = (int) (d * 10);
+            list.add(0,i);
+        }else if (round.equals("normal")) {
+            double d = c * 10;
+            list.add(0,(int)d);
+        }
 
         ArrayAdapter<String> tempAdapter = new ArrayAdapter<String>(MainActivity.this, R.layout.list_item);
 
@@ -304,7 +331,7 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
 
         adapter.clear();
         adapter = tempAdapter;
-        adapter.insert(temp+"円商品 ¥" +list.get(0)+"- ("+ Integer.parseInt(btnTxt) + "割引)" ,0);
+        adapter.insert(temp + "円商品 ¥" + list.get(0) + "- (" + Integer.parseInt(btnTxt) + "割引)", 0);
         lv.setAdapter(adapter);
 
         new SendThread(MainActivity.this,"waribiki," + temp + "," + list.get(0) + "," + Integer.parseInt(btnTxt)).start();

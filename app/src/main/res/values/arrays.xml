@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="entries_list_preference">
+        <item>下一桁を四捨五入</item>
+        <item>下一桁を切り上げ</item>
+        <item>下一桁を切り捨て</item>
+        <item>何もしない</item>
+    </string-array>
+    <string-array name="entryvalues_list_preference">
+        <item>round</item>
+        <item>ceil</item>
+        <item>floor</item>
+        <item>normal</item>
+    </string-array>
+</resources>

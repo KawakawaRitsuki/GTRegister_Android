@@ -3,13 +3,13 @@
     xmlns:android="http://schemas.android.com/apk/res/android">
 
     <PreferenceCategory
-        android:title="設定">
+        android:title="通信設定">
 
         <EditTextPreference
-        android:key="ip_preference"
-        android:title="IPアドレス設定"
-        android:summary="接続先のPCのIPアドレス設定"
-        android:dialogTitle="IPアドレス(XXX.XXX.XXX.XXX形式)を入力してください。" />
+            android:key="ip_preference"
+            android:title="IPアドレス設定"
+            android:summary="接続先のPCのIPアドレス設定"
+            android:dialogTitle="IPアドレス(XXX.XXX.XXX.XXX形式)を入力してください。" />
 
         <EditTextPreference
             android:key="port_preference"
@@ -19,4 +19,19 @@
             android:dialogTitle="ポート番号(0-65535)を入力してください。（初期設定=10000)" />
 
     </PreferenceCategory>
+
+    <PreferenceCategory
+        android:title="計算設定">
+
+        <ListPreference
+            android:key="round"
+            android:title="割引時処理設定"
+            android:summary="下一桁の処理設定"
+            android:dialogTitle="処理設定"
+            android:entries="@array/entries_list_preference"
+            android:entryValues="@array/entryvalues_list_preference"
+            android:defaultValue="normal"/>
+
+    </PreferenceCategory>
+
 </PreferenceScreen>
