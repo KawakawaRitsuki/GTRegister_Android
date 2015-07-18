@@ -46,28 +46,62 @@ import java.util.regex.Pattern;
 
 public class MainActivity extends ActionBarActivity implements View.OnClickListener{
 
+    /*
+     * このアプリケーションの命名規則
+     *
+     * クラス名
+     *  - 最初の文字は大文字
+     *  - 大文字で区切る
+     *
+     * メソッド名
+     *  - 最初の文字は小文字
+     *  - 大文字で区切る
+     *
+     *  - booleanを返すものは、isを最初につける
+     *
+     * クラス変数
+     *  - 最初にmを付ける
+     *  - 大文字で区切る
+     *
+     * Button = Btn
+     * Textview = Tv
+     *
+     * 命名するときは、理解できるようにする。
+     *
+     * O mDiscountBtn
+     * X mButton1
+     *
+     */
+
+    //カメラ系
     private Camera mCamera;
     private CameraPreview mPreview;
-    private SoundPool sp;
-    private int sound_id;
-    private AlertDialog alertDialog;
-    private ArrayAdapter<String> adapter;
-    private SharedPreferences spf;
+    private ImageScanner scanner;
 
-    private Vibrator vib;
-    private ArrayList<Integer> list;
-    private ListView lv;
-
-    public static Button waribikiBtn;
-    public static Button kaikeiBtn;
-    public static Button button;
-
-    ImageScanner scanner;
-
+    //フラグ系
     private boolean barcodeScanned = false;
     private boolean previewing = true;
+
+    //レイアウト系
+    private Button waribikiBtn;
+    private Button kaikeiBtn;
+    private Button button;
+    private ListView lv;
+
+    //変数
+    private ArrayList<Integer> list;
+    private ArrayAdapter<String> adapter;
+    private int sound_id;
+
+    //定数
     public static final int PREFERENCE_INIT = 0;
     public static final int PREFERENCE_BOOTED = 1;
+
+    //その他
+    private AlertDialog alertDialog;
+    private SharedPreferences spf;
+    private Vibrator vib;
+    private SoundPool sp;
 
     static {
         System.loadLibrary("iconv");
