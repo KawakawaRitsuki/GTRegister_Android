@@ -27,7 +27,6 @@ import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ListView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import net.sourceforge.zbar.Config;
 import net.sourceforge.zbar.Image;
@@ -62,8 +61,8 @@ public class MainActivity extends ActionBarActivity {
      *  - 最初にmを付ける
      *  - 大文字で区切る
      *
-     * Button = Btn
-     * Textview = Tv
+     *  Button = Btn
+     *  TextView = Tv
      *
      * 命名するときは、理解できるようにする。
      *
@@ -106,10 +105,10 @@ public class MainActivity extends ActionBarActivity {
     private Vibrator mVibrator;
     private SoundPool mSoundPool;
 
+
     static {
         System.loadLibrary("iconv");
     }
-
 
     //onCreateでは定義＆関連付けのみをする
     public void onCreate(Bundle savedInstanceState) {
@@ -143,7 +142,7 @@ public class MainActivity extends ActionBarActivity {
         super.onStart();
 
         //画面の操作
-        setVisibilitys(0);
+        setVisibilities(0);
 
         mScanner.setConfig(0, Config.X_DENSITY, 3);
         mScanner.setConfig(0, Config.Y_DENSITY, 3);
@@ -151,30 +150,17 @@ public class MainActivity extends ActionBarActivity {
 
         mGoodsLv.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
             @Override
-            public boolean onItemLongClick(AdapterView<?> parent, View view, final int position, long id) {
-                AlertDialog.Builder adb = new AlertDialog.Builder(MainActivity.this);
-                adb.setTitle("Are you sure?");
-                adb.setMessage(mGoodsLv.getItemAtPosition(position).toString() + "を削除しますか？");
-                adb.setPositiveButton("OK",
+            public boolean onItemLongClick(AdapterView<?> parent, View view, final int _position, long id) {
+
+                alert("Are you sure?",
+                        mGoodsLv.getItemAtPosition(_position).toString() + "を削除しますか？",
                         new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialog, int which) {
-                                new SendThread(MainActivity.this, "delete," + position).start();
-                                mAmountsList.remove(position);
-                                ArrayAdapter<String> tempAdapter = new ArrayAdapter<String>(MainActivity.this, R.layout.list_item);
-                                for (int i = 0; i != mGoodsNameAdapter.getCount(); i++) {
-                                    if (i != position)
-                                        tempAdapter.add(mGoodsNameAdapter.getItem(i));
-                                }
-                                mGoodsNameAdapter.clear();
-                                mGoodsNameAdapter = tempAdapter;
-                                mGoodsLv.setAdapter(mGoodsNameAdapter);
-
+                                delete(_position);
                             }
-                        });
-                adb.setNegativeButton("Cancel", null);
-                adb.setCancelable(true);
-                adb.show();
+                        }, true);
+
                 return false;
             }
         });
@@ -196,14 +182,12 @@ public class MainActivity extends ActionBarActivity {
                     mCamera.startPreview();
                     mCamera.cancelAutoFocus();
                     mCamera.autoFocus(null);
-                    setVisibilitys(2);
+                    setVisibilities(2);
                 } else {
-                    if (!mBarcodeScanned) {
-                        mCamera.cancelAutoFocus();
-                        try {
-                            mCamera.autoFocus(null);
-                        } catch (RuntimeException e) {
-                        }
+                    mCamera.cancelAutoFocus();
+                    try {
+                        mCamera.autoFocus(null);
+                    } catch (RuntimeException e) {
                     }
                 }
                 return false;
@@ -211,7 +195,28 @@ public class MainActivity extends ActionBarActivity {
         });
     }
 
-    private void setVisibilitys(int i) {
+    private void alert(String title , String message , DialogInterface.OnClickListener onClick , boolean cancelable){
+        AlertDialog.Builder adb = new AlertDialog.Builder(MainActivity.this);
+        adb.setTitle(title);
+        adb.setMessage(message);
+        adb.setPositiveButton("OK", onClick);
+        adb.setNegativeButton("Cancel", null);
+        adb.setCancelable(cancelable);
+        adb.show();
+    }
+
+    private View alertView(String title ,View view , DialogInterface.OnClickListener onClick , boolean cancelable ,boolean positiveBtn){
+        AlertDialog.Builder adb = new AlertDialog.Builder(this);
+        adb.setTitle(title);
+        adb.setView(view);
+        if(positiveBtn)
+            adb.setPositiveButton("OK", onClick);
+        adb.setCancelable(cancelable);
+        adb.show();
+        return view;
+    }
+
+    private void setVisibilities(int i) {
         if(i == 0){
             mDiscountBtn.setVisibility(View.INVISIBLE);
             mBillBtn.setVisibility(View.INVISIBLE);
@@ -244,73 +249,70 @@ public class MainActivity extends ActionBarActivity {
         for(int i: mAmountsList){
             temp = temp + i;
         }
-
         final int sum = temp;
 
-        new SendThread(MainActivity.this,"goukei," + temp).start();
+        new SendThread(MainActivity.this,"goukei," + sum).start();
 
-        AlertDialog.Builder adb = new AlertDialog.Builder(this);
         LayoutInflater inflater = (LayoutInflater)this.getSystemService(LAYOUT_INFLATER_SERVICE);
-        View view = inflater.inflate(R.layout.dialog_kaikei,(ViewGroup)findViewById(R.id.dialog_kaikei_layout));
+        final View view = inflater.inflate(R.layout.dialog_bill,(ViewGroup)findViewById(R.id.dialog_bill_layout));
 
-        final EditText et = (EditText)view.findViewById(R.id.editText);
-        adb.setTitle("合計金額は" + sum + "円です");
-        adb.setView(view);
-        adb.setPositiveButton("OK",
+        View view1 = alertView("合計金額は" + sum + "円です",
+                view,
                 new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
-                        String uketori = et.getEditableText().toString();
-                        if (!uketori.isEmpty() && Integer.parseInt(uketori) >= sum) {
-                            int change = Integer.parseInt(uketori) - sum;
-                            new SendThread(MainActivity.this, "kaikei," + Integer.parseInt(uketori) + "," + sum + "," + change).start();
+                        EditText et = (EditText) view.findViewById(R.id.editText);
+                        String acceptance = et.getEditableText().toString();
 
-                            AlertDialog.Builder adb = new AlertDialog.Builder(MainActivity.this);
+                        if (!acceptance.isEmpty() && Integer.parseInt(acceptance) >= sum) {
+
+                            int change = Integer.parseInt(acceptance) - sum;
+                            new SendThread(MainActivity.this, "kaikei," + Integer.parseInt(acceptance) + "," + sum + "," + change).start();
+
                             LayoutInflater inflater = (LayoutInflater) MainActivity.this.getSystemService(LAYOUT_INFLATER_SERVICE);
                             View view = inflater.inflate(R.layout.dialog_change, (ViewGroup) findViewById(R.id.dialog_change_layout));
 
-                            TextView tv1 = (TextView)view.findViewById(R.id.azukari);
-                            TextView tv2 = (TextView)view.findViewById(R.id.genkei);
-                            TextView tv3 = (TextView)view.findViewById(R.id.change);
+                            TextView tv1 = (TextView) view.findViewById(R.id.azukari);
+                            TextView tv2 = (TextView) view.findViewById(R.id.genkei);
+                            TextView tv3 = (TextView) view.findViewById(R.id.change);
 
-                            tv1.setText(uketori + "円");
+                            tv1.setText(acceptance + "円");
                             tv2.setText(sum + "円");
                             tv3.setText(change + "円");
 
-                            adb.setTitle("会計");
-                            adb.setView(view);
-                            adb.setPositiveButton("OK",
+                            alertView("合計金額は" + sum + "円です",
+                                    view,
                                     new DialogInterface.OnClickListener() {
                                         @Override
                                         public void onClick(DialogInterface dialog, int which) {
                                             mAmountsList.removeAll(mAmountsList);
                                             mGoodsNameAdapter.clear();
-                                            setVisibilitys(0);
+                                            setVisibilities(0);
                                         }
-                                    });
-                            adb.setCancelable(false);
-                            adb.show();
-
+                                    },
+                                    false,
+                                    true);
+                        } else {
+                            //金額不正時処理
                         }
 
                     }
-                });
-        adb.setCancelable(true);
-        adb.show();
+                },
+                true,
+                true);
+
     }
 
     public void discount(View v){
         AlertDialog.Builder adb = new AlertDialog.Builder(this);
-        LayoutInflater inflater = (LayoutInflater)this.getSystemService(
-                LAYOUT_INFLATER_SERVICE);
-        View view =  inflater.inflate(R.layout.dialog_waribiki,
-                (ViewGroup)findViewById(R.id.dialog_waribiki_layout));
+        LayoutInflater inflater = (LayoutInflater)this.getSystemService(LAYOUT_INFLATER_SERVICE);
+        View view =  inflater.inflate(R.layout.dialog_discount,(ViewGroup)findViewById(R.id.dialog_discount_layout));
 
         adb.setTitle("割引選択");
         adb.setView(view);
         adb.setCancelable(true);
-        alertDialog = adb.create();
-        alertDialog.show();
+        adb.show();
+        alertView("割引選択",view,null,true,false);
     }
 
     public void onDiscountClick(View v) {
@@ -327,7 +329,6 @@ public class MainActivity extends ActionBarActivity {
         double c = b / 10;
 
         String round = mSharedPreferences.getString("round","normal");
-
         if (round.equals("round")) {
             long l = Math.round(c);
             int i = (int) (l * 10);
@@ -345,7 +346,8 @@ public class MainActivity extends ActionBarActivity {
             mAmountsList.add(0, (int) d);
         }
 
-        ArrayAdapter<String> tempAdapter = new ArrayAdapter<String>(MainActivity.this, R.layout.list_item);
+        ArrayAdapter<String> tempAdapter = new ArrayAdapter<>(MainActivity.this, R.layout.list_item);
+
 
         for(int i = 0; i != mGoodsNameAdapter.getCount();i++){
             if(i != 0)
@@ -360,13 +362,13 @@ public class MainActivity extends ActionBarActivity {
         new SendThread(MainActivity.this,"waribiki," + temp + "," + mAmountsList.get(0) + "," + Integer.parseInt(btnTxt)).start();
 
         alertDialog.dismiss();
-        setVisibilitys(3);
+        setVisibilities(3);
     }
-    
+
     public void input(View v){
         AlertDialog.Builder adb = new AlertDialog.Builder(this);
         LayoutInflater inflaterInput = (LayoutInflater)this.getSystemService(LAYOUT_INFLATER_SERVICE);
-        View view = inflaterInput.inflate(R.layout.dialog_input,(ViewGroup)findViewById(R.id.dialog_input_layout));
+        View view = inflaterInput.inflate(R.layout.dialog_input, (ViewGroup) findViewById(R.id.dialog_input_layout));
 
         final EditText et = (EditText)view.findViewById(R.id.editText);
         adb.setTitle("商品金額入力");
@@ -381,7 +383,7 @@ public class MainActivity extends ActionBarActivity {
                             mCamera.setPreviewCallback(null);
                             mCamera.stopPreview();
 
-                            setVisibilitys(1);
+                            setVisibilities(1);
                             mBarcodeScanned = true;
                             mAmountsList.add(0, Integer.parseInt(input));
                             mGoodsNameAdapter.insert(input + "円商品 ¥" + input + "-", 0);
@@ -403,6 +405,18 @@ public class MainActivity extends ActionBarActivity {
 
         ad.show();
 
+    }
+    private void delete(int position){
+        new SendThread(MainActivity.this, "delete," + position).start();
+        mAmountsList.remove(position);
+        ArrayAdapter<String> tempAdapter = new ArrayAdapter<String>(MainActivity.this, R.layout.list_item);
+        for (int i = 0; i != mGoodsNameAdapter.getCount(); i++) {
+            if (i != position)
+                tempAdapter.add(mGoodsNameAdapter.getItem(i));
+        }
+        mGoodsNameAdapter.clear();
+        mGoodsNameAdapter = tempAdapter;
+        mGoodsLv.setAdapter(mGoodsNameAdapter);
     }
 
     public void onPause() {
@@ -427,24 +441,23 @@ public class MainActivity extends ActionBarActivity {
             Image barcode = new Image(size.width, size.height, "Y800");
             barcode.setData(data);
 
-
             int result = mScanner.scanImage(barcode);
 
             if (result != 0) {
-                SymbolSet syms = mScanner.getResults();
-                for (Symbol sym : syms) {
-                    if(isNumber(sym.getData())) {
+                SymbolSet symbolSet = mScanner.getResults();
+                for (Symbol symbol : symbolSet) {
+                    if(isNumber(symbol.getData())) {
+                        String money = symbol.getData();
 
                         mCamera.setPreviewCallback(null);
                         mCamera.stopPreview();
-                        setVisibilitys(1);
+                        setVisibilities(1);
                         mVibrator.vibrate(100);
                         mSoundPool.play(sound_id, 1.0F, 1.0F, 0, 0, 1.0F);
-                        Toast.makeText(MainActivity.this, sym.getData(), Toast.LENGTH_SHORT).show();
-                        new SendThread(MainActivity.this, sym.getData()).start();
+                        new SendThread(MainActivity.this, money).start();
                         mBarcodeScanned = true;
-                        mAmountsList.add(0, Integer.parseInt(sym.getData()));
-                        mGoodsNameAdapter.insert(sym.getData() + "円商品 ¥" + sym.getData() + "-", 0);
+                        mAmountsList.add(0, Integer.parseInt(money));
+                        mGoodsNameAdapter.insert(money + "円商品 ¥" + money + "-", 0);
                         mGoodsLv.setAdapter(mGoodsNameAdapter);
                     }
                 }
