@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:orientation="vertical" android:layout_width="match_parent"
-    android:id="@+id/dialog_waribiki_layout"
+    android:id="@+id/dialog_discount_layout"
     android:layout_height="match_parent">
 
     <LinearLayout
@@ -14,6 +14,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="1割引"
+            android:onClick="onDiscountClick"
             android:id="@+id/btn1" />
 
         <Button
@@ -21,6 +22,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="2割引"
+            android:onClick="onDiscountClick"
             android:id="@+id/btn2" />
 
         <Button
@@ -28,6 +30,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="3割引"
+            android:onClick="onDiscountClick"
             android:id="@+id/btn3" />
         
     </LinearLayout>
@@ -42,6 +45,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="4割引"
+            android:onClick="onDiscountClick"
             android:id="@+id/btn4"/>
 
         <Button
@@ -49,6 +53,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="5割引"
+            android:onClick="onDiscountClick"
             android:id="@+id/btn5"/>
 
         <Button
@@ -56,6 +61,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="6割引"
+            android:onClick="Discount"
             android:id="@+id/btn6"/>
 
     </LinearLayout>
@@ -70,6 +76,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="7割引"
+            android:onClick="onDiscountClick"
             android:id="@+id/btn7"/>
 
         <Button
@@ -77,6 +84,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="8割引"
+            android:onClick="onDiscountClick"
             android:id="@+id/btn8"/>
 
         <Button
@@ -84,6 +92,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="9割引"
+            android:onClick="onDiscountClick"
             android:id="@+id/btn9"/>
 
     </LinearLayout>

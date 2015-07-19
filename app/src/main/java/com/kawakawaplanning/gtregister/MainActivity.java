@@ -7,7 +7,6 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.hardware.Camera;
-import android.hardware.Camera.PreviewCallback;
 import android.media.AudioManager;
 import android.media.SoundPool;
 import android.os.Bundle;
@@ -21,11 +20,13 @@ import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.FrameLayout;
-import android.widget.LinearLayout;
-import android.widget.Toast;
+import android.widget.ListView;
+import android.widget.TextView;
 
 import net.sourceforge.zbar.Config;
 import net.sourceforge.zbar.Image;
@@ -37,112 +38,203 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-public class MainActivity extends ActionBarActivity implements View.OnClickListener{
+public class MainActivity extends ActionBarActivity {
 
+    /*
+     * このアプリケーションの命名規則
+     *
+     * クラス名
+     *  - 最初の文字は大文字
+     *  - 大文字で区切る
+     *
+     * メソッド名
+     *  - 最初の文字は小文字
+     *  - 大文字で区切る
+     *
+     *  - booleanを返すものは、isを最初につける
+     *
+     * クラス変数
+     *  - 最初にmを付ける
+     *  - 大文字で区切る
+     *
+     *  Button = Btn
+     *  TextView = Tv
+     *
+     * 命名するときは、理解できるようにする。
+     *
+     * O mDiscountBtn
+     * X mButton1
+     *
+     */
+
+    private void assignViews() {
+        mCameraPreview = (FrameLayout) findViewById(R.id.cameraPreview);
+        mDiscountBtn   = (Button)      findViewById(R.id.discountBtn);
+        mInputBtn      = (Button)      findViewById(R.id.inputBtn);
+        mBillBtn       = (Button)      findViewById(R.id.billBtn);
+        mGoodsLv       = (ListView)    findViewById(R.id.goodsLv);
+    }
+
+    //カメラ系
     private Camera mCamera;
+    private ImageScanner mScanner;
     private CameraPreview mPreview;
-    private SoundPool sp;
+
+    //フラグ系
+    private boolean mBarcodeScanned = false;
+
+    //レイアウト系
+    private FrameLayout mCameraPreview;
+    private Button mDiscountBtn;
+    private Button mInputBtn;
+    private Button mBillBtn;
+    private ListView mGoodsLv;
+
+    //変数
+    private ArrayList<Integer> mAmountsList;
+    private ArrayAdapter<String> mGoodsNameAdapter;
     private int sound_id;
+
+    //その他
     private AlertDialog alertDialog;
+    private SharedPreferences mSharedPreferences;
+    private Vibrator mVibrator;
+    private SoundPool mSoundPool;
 
-    private Vibrator vib;
-
-    public static LinearLayout buttons;
-    public static Button button;
-
-    ImageScanner scanner;
-
-    private boolean barcodeScanned = false;
-    private boolean previewing = true;
-    public static final int PREFERENCE_INIT = 0;
-    public static final int PREFERENCE_BOOTED = 1;
 
     static {
         System.loadLibrary("iconv");
     }
 
+    //onCreateでは定義＆関連付けのみをする
     public void onCreate(Bundle savedInstanceState) {
-
-        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);//画面常時点灯のアレ
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        vib = (Vibrator) getSystemService(VIBRATOR_SERVICE);
-
-        SharedPreferences spf = PreferenceManager.getDefaultSharedPreferences(this);
-        if(PREFERENCE_INIT == getState() ){
-            SharedPreferences.Editor editor = spf.edit();
-            editor.putString("ip_preference","192.168.XXX.XXX");
-            editor.putString("port_preference", "10000");
-            editor.apply();
-            setState(PREFERENCE_BOOTED);
-        }
-
-        sp = new SoundPool( 1, AudioManager.STREAM_MUSIC, 0 );
-        sound_id = sp.load(this, R.raw.success, 1 );
-
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);//多分画面回転的な何か
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);//画面常時点灯のアレ
 
-        mCamera = getCameraInstance();
+        assignViews();
 
-        button = (Button)findViewById(R.id.button);
-        buttons = (LinearLayout)findViewById(R.id.buttons);
+        //カメラ系の定義
+        mScanner           = new ImageScanner();
+        mCamera            = Camera.open();
+        mPreview           = new CameraPreview(this, mCamera, previewCb, null);
 
-        buttons.setVisibility(View.INVISIBLE);
-        button.setVisibility(View.VISIBLE);
+        //変数系の定義
+        mGoodsNameAdapter  = new ArrayAdapter<>(this,R.layout.list_item);
+        mAmountsList       = new ArrayList<>();
+        mSoundPool         = new SoundPool( 1, AudioManager.STREAM_MUSIC, 0 );
+        sound_id           = mSoundPool.load(this, R.raw.success, 1);
 
-        scanner = new ImageScanner();
-        scanner.setConfig(0, Config.X_DENSITY, 3);
-        scanner.setConfig(0, Config.Y_DENSITY, 3);
+        //その他の定義
+        mVibrator          = (Vibrator) getSystemService(VIBRATOR_SERVICE);
+        mSharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
 
-        mPreview = new CameraPreview(this, mCamera, previewCb, null);
-        FrameLayout preview = (FrameLayout)findViewById(R.id.cameraPreview);
+    }
 
-        preview.addView(mPreview);
+    @Override
+    protected void onStart() {
+        super.onStart();
 
-        FrameLayout root = (FrameLayout)findViewById(R.id.root);
-        root.setOnTouchListener(new View.OnTouchListener() {
+        //画面の操作
+        setVisibilities(0);
+
+        mScanner.setConfig(0, Config.X_DENSITY, 3);
+        mScanner.setConfig(0, Config.Y_DENSITY, 3);
+        mCameraPreview.addView(mPreview);
+
+        mGoodsLv.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
             @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                if (barcodeScanned) {
-                    barcodeScanned = false;
-                    mCamera.setPreviewCallback(previewCb);
-                    mCamera.startPreview();
-                    previewing = true;
-                    mCamera.cancelAutoFocus();
-                    mCamera.autoFocus(null);
-                    buttons.setVisibility(View.INVISIBLE);
-                    button.setVisibility(View.VISIBLE);
-                }else{
-                    new Thread(new Runnable() {
-                        @Override
-                        public void run() {
-                            if (previewing) {
-                                mCamera.cancelAutoFocus();
-                                mCamera.autoFocus(null);
+            public boolean onItemLongClick(AdapterView<?> parent, View view, final int _position, long id) {
+
+                alert("Are you sure?",
+                        mGoodsLv.getItemAtPosition(_position).toString() + "を削除しますか？",
+                        new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                delete(_position);
                             }
-                        }
-                    }).start();
-                }
+                        }, true);
+
                 return false;
             }
         });
 
+        if(mSharedPreferences.getBoolean("booted",false) == false ){
+            SharedPreferences.Editor editor = mSharedPreferences.edit();
+            editor.putString("ip_preference","192.168.XXX.XXX");
+            editor.putString("port_preference", "10000");
+            editor.putBoolean("booted",true);
+            editor.apply();
+        }
+
+        findViewById(R.id.root).setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                if (mBarcodeScanned) {
+                    mBarcodeScanned = false;
+                    mCamera.setPreviewCallback(previewCb);
+                    mCamera.startPreview();
+                    mCamera.cancelAutoFocus();
+                    mCamera.autoFocus(null);
+                    setVisibilities(2);
+                } else {
+                    mCamera.cancelAutoFocus();
+                    try {
+                        mCamera.autoFocus(null);
+                    } catch (RuntimeException e) {
+                    }
+                }
+                return false;
+            }
+        });
     }
 
-    private void setState(int state) {
-        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
-        sp.edit().putInt("InitState", state).commit();
+    private void alert(String title , String message , DialogInterface.OnClickListener onClick , boolean cancelable){
+        AlertDialog.Builder adb = new AlertDialog.Builder(MainActivity.this);
+        adb.setTitle(title);
+        adb.setMessage(message);
+        adb.setPositiveButton("OK", onClick);
+        adb.setNegativeButton("Cancel", null);
+        adb.setCancelable(cancelable);
+        adb.show();
     }
 
-    private int getState() {
-        int state;
-        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
-        state = sp.getInt("InitState", PREFERENCE_INIT);
-        return state;
+    private View alertView(String title ,View view , DialogInterface.OnClickListener onClick , boolean cancelable ,boolean positiveBtn){
+        AlertDialog.Builder adb = new AlertDialog.Builder(this);
+        adb.setTitle(title);
+        adb.setView(view);
+        if(positiveBtn)
+            adb.setPositiveButton("OK", onClick);
+        adb.setCancelable(cancelable);
+        adb.show();
+        return view;
+    }
+
+    private void setVisibilities(int i) {
+        if(i == 0){
+            mDiscountBtn.setVisibility(View.INVISIBLE);
+            mBillBtn.setVisibility(View.INVISIBLE);
+            mInputBtn.setVisibility(View.VISIBLE);
+        }else if(i == 1){
+            mDiscountBtn.setVisibility(View.VISIBLE);
+            mBillBtn.setVisibility(View.VISIBLE);
+            mInputBtn.setVisibility(View.INVISIBLE);
+        }else if(i == 2){
+            mDiscountBtn.setVisibility(View.INVISIBLE);
+            mBillBtn.setVisibility(View.VISIBLE);
+            mInputBtn.setVisibility(View.VISIBLE);
+        }else if(i == 3){
+            mDiscountBtn.setVisibility(View.INVISIBLE);
+            mBillBtn.setVisibility(View.VISIBLE);
+            mInputBtn.setVisibility(View.INVISIBLE);
+        }
+
     }
 
     public static boolean isNumber(String str){
@@ -151,79 +243,132 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
         return m.find();
     }
 
-    public void kaikei(View v){
-        
-        new SendThread(MainActivity.this,"kaikei").start();
-        AlertDialog.Builder adb = new AlertDialog.Builder(this);
-        LayoutInflater inflater = (LayoutInflater)this.getSystemService(LAYOUT_INFLATER_SERVICE);
-        View view =  inflater.inflate(R.layout.dialog_kaikei,(ViewGroup)findViewById(R.id.dialogname_layout));
+    public void bill(View v){
 
-        final EditText et = (EditText)view.findViewById(R.id.editText);
-        adb.setTitle("受取金額入力");
-        adb.setView(view);
-        adb.setPositiveButton("OK",
+        int temp = 0;
+        for(int i: mAmountsList){
+            temp = temp + i;
+        }
+        final int sum = temp;
+
+        new SendThread(MainActivity.this,"goukei," + sum).start();
+
+        LayoutInflater inflater = (LayoutInflater)this.getSystemService(LAYOUT_INFLATER_SERVICE);
+        final View view = inflater.inflate(R.layout.dialog_bill,(ViewGroup)findViewById(R.id.dialog_bill_layout));
+
+        View view1 = alertView("合計金額は" + sum + "円です",
+                view,
                 new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialog, int which) {
-                        String uketori = et.getEditableText().toString();
+                        EditText et = (EditText) view.findViewById(R.id.editText);
+                        String acceptance = et.getEditableText().toString();
 
-                        if (!uketori.isEmpty() && isNumber(uketori)) {
-                            new SendThread(MainActivity.this, "uketori," + uketori).start();
+                        if (!acceptance.isEmpty() && Integer.parseInt(acceptance) >= sum) {
+
+                            int change = Integer.parseInt(acceptance) - sum;
+                            new SendThread(MainActivity.this, "kaikei," + Integer.parseInt(acceptance) + "," + sum + "," + change).start();
+
+                            LayoutInflater inflater = (LayoutInflater) MainActivity.this.getSystemService(LAYOUT_INFLATER_SERVICE);
+                            View view = inflater.inflate(R.layout.dialog_change, (ViewGroup) findViewById(R.id.dialog_change_layout));
+
+                            TextView tv1 = (TextView) view.findViewById(R.id.azukari);
+                            TextView tv2 = (TextView) view.findViewById(R.id.genkei);
+                            TextView tv3 = (TextView) view.findViewById(R.id.change);
+
+                            tv1.setText(acceptance + "円");
+                            tv2.setText(sum + "円");
+                            tv3.setText(change + "円");
+
+                            alertView("合計金額は" + sum + "円です",
+                                    view,
+                                    new DialogInterface.OnClickListener() {
+                                        @Override
+                                        public void onClick(DialogInterface dialog, int which) {
+                                            mAmountsList.removeAll(mAmountsList);
+                                            mGoodsNameAdapter.clear();
+                                            setVisibilities(0);
+                                        }
+                                    },
+                                    false,
+                                    true);
+                        } else {
+                            //金額不正時処理
                         }
+
                     }
-                });
-        adb.setCancelable(true);
-        alertDialog = adb.create();
-        alertDialog.show();
+                },
+                true,
+                true);
+
     }
 
-    public void waribiki(View v){
+    public void discount(View v){
         AlertDialog.Builder adb = new AlertDialog.Builder(this);
-        LayoutInflater inflater = (LayoutInflater)this.getSystemService(
-                LAYOUT_INFLATER_SERVICE);
-        View view =  inflater.inflate(R.layout.dialog_waribiki,
-                (ViewGroup)findViewById(R.id.dialog_waribiki_layout));
-
-        view.findViewById(R.id.btn1).setOnClickListener(this);
-        view.findViewById(R.id.btn2).setOnClickListener(this);
-        view.findViewById(R.id.btn3).setOnClickListener(this);
-        view.findViewById(R.id.btn4).setOnClickListener(this);
-        view.findViewById(R.id.btn5).setOnClickListener(this);
-        view.findViewById(R.id.btn6).setOnClickListener(this);
-        view.findViewById(R.id.btn7).setOnClickListener(this);
-        view.findViewById(R.id.btn8).setOnClickListener(this);
-        view.findViewById(R.id.btn9).setOnClickListener(this);
+        LayoutInflater inflater = (LayoutInflater)this.getSystemService(LAYOUT_INFLATER_SERVICE);
+        View view =  inflater.inflate(R.layout.dialog_discount,(ViewGroup)findViewById(R.id.dialog_discount_layout));
 
         adb.setTitle("割引選択");
         adb.setView(view);
         adb.setCancelable(true);
-        alertDialog = adb.create();
-        alertDialog.show();
+        adb.show();
+        alertView("割引選択",view,null,true,false);
     }
 
-    @Override
-    public void onClick(View v) {
+    public void onDiscountClick(View v) {
 
         Button button = (Button)v.getRootView().findViewById(v.getId());
-        String btnTxt = button.getText().toString().substring(0,1);
+        String btnTxt = button.getText().toString().substring(0, 1);
 
-        new SendThread(MainActivity.this,Integer.parseInt(btnTxt)+"割引").start();
-        System.out.println(Integer.parseInt(btnTxt)+"割引");
+        int temp = mAmountsList.get(0);
+        mAmountsList.remove(0);
+
+        int wari = 10 - Integer.parseInt(btnTxt);
+        double a = temp/10;
+        double b = a * wari;
+        double c = b / 10;
+
+        String round = mSharedPreferences.getString("round","normal");
+        if (round.equals("round")) {
+            long l = Math.round(c);
+            int i = (int) (l * 10);
+            mAmountsList.add(0, i);
+        }else if (round.equals("ceil")) {
+            double d = Math.ceil(c);
+            int i = (int) (d * 10);
+            mAmountsList.add(0, i);
+        }else if (round.equals("floor")) {
+            double d = Math.floor(c);
+            int i = (int) (d * 10);
+            mAmountsList.add(0, i);
+        }else if (round.equals("normal")) {
+            double d = c * 10;
+            mAmountsList.add(0, (int) d);
+        }
+
+        ArrayAdapter<String> tempAdapter = new ArrayAdapter<>(MainActivity.this, R.layout.list_item);
+
+
+        for(int i = 0; i != mGoodsNameAdapter.getCount();i++){
+            if(i != 0)
+                tempAdapter.add(mGoodsNameAdapter.getItem(i));
+        }
+
+        mGoodsNameAdapter.clear();
+        mGoodsNameAdapter = tempAdapter;
+        mGoodsNameAdapter.insert(temp + "円商品 ¥" + mAmountsList.get(0) + "- (" + Integer.parseInt(btnTxt) + "割引)", 0);
+        mGoodsLv.setAdapter(mGoodsNameAdapter);
+
+        new SendThread(MainActivity.this,"waribiki," + temp + "," + mAmountsList.get(0) + "," + Integer.parseInt(btnTxt)).start();
+
         alertDialog.dismiss();
-        barcodeScanned = false;
-        mCamera.setPreviewCallback(previewCb);
-        mCamera.startPreview();
-        previewing = true;
-        mCamera.cancelAutoFocus();
-        mCamera.autoFocus(null);
-        buttons.setVisibility(View.INVISIBLE);
-        button.setVisibility(View.VISIBLE);
+        setVisibilities(3);
     }
-    
-    public void nyuryoku(View v){
+
+    public void input(View v){
         AlertDialog.Builder adb = new AlertDialog.Builder(this);
         LayoutInflater inflaterInput = (LayoutInflater)this.getSystemService(LAYOUT_INFLATER_SERVICE);
-        View view = inflaterInput.inflate(R.layout.dialog_input,(ViewGroup)findViewById(R.id.dialog_input_layout));
+        View view = inflaterInput.inflate(R.layout.dialog_input, (ViewGroup) findViewById(R.id.dialog_input_layout));
 
         final EditText et = (EditText)view.findViewById(R.id.editText);
         adb.setTitle("商品金額入力");
@@ -235,32 +380,44 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
                         String input = et.getEditableText().toString();
                         if (!input.isEmpty() && isNumber(input)) {
                             new SendThread(MainActivity.this, input).start();
-                            previewing = false;
                             mCamera.setPreviewCallback(null);
                             mCamera.stopPreview();
 
-                            buttons.setVisibility(View.VISIBLE);
-                            button.setVisibility(View.INVISIBLE);
-                            barcodeScanned = true;
+                            setVisibilities(1);
+                            mBarcodeScanned = true;
+                            mAmountsList.add(0, Integer.parseInt(input));
+                            mGoodsNameAdapter.insert(input + "円商品 ¥" + input + "-", 0);
+                            mGoodsLv.setAdapter(mGoodsNameAdapter);
                         }//else文でエラー書く
                     }
                 });
         adb.setCancelable(true);
-        adb.show();
-    }
 
-    public void cancel(View v){
-        barcodeScanned = false;
-        mCamera.setPreviewCallback(previewCb);
-        mCamera.startPreview();
-        previewing = true;
-        mCamera.cancelAutoFocus();
-        mCamera.autoFocus(null);
-        buttons.setVisibility(View.INVISIBLE);
-        button.setVisibility(View.VISIBLE);
-        new SendThread(MainActivity.this,"cancel").start();
-    }
+        final AlertDialog ad = adb.create();
+        et.setOnFocusChangeListener(new View.OnFocusChangeListener() {
+            @Override
+            public void onFocusChange(View v, boolean hasFocus) {
+                if (hasFocus) {
+                    ad.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE);
+                }
+            }
+        });
 
+        ad.show();
+
+    }
+    private void delete(int position){
+        new SendThread(MainActivity.this, "delete," + position).start();
+        mAmountsList.remove(position);
+        ArrayAdapter<String> tempAdapter = new ArrayAdapter<String>(MainActivity.this, R.layout.list_item);
+        for (int i = 0; i != mGoodsNameAdapter.getCount(); i++) {
+            if (i != position)
+                tempAdapter.add(mGoodsNameAdapter.getItem(i));
+        }
+        mGoodsNameAdapter.clear();
+        mGoodsNameAdapter = tempAdapter;
+        mGoodsLv.setAdapter(mGoodsNameAdapter);
+    }
 
     public void onPause() {
         super.onPause();
@@ -268,22 +425,15 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
         finish();
     }
 
-    public static Camera getCameraInstance(){
-        Camera c = null;
-        c = Camera.open();
-        return c;
-    }
-
     private void releaseCamera() {
         if (mCamera != null) {
-            previewing = false;
             mCamera.setPreviewCallback(null);
             mCamera.release();
             mCamera = null;
         }
     }
 
-    Camera.PreviewCallback previewCb = new PreviewCallback() {
+    Camera.PreviewCallback previewCb = new Camera.PreviewCallback() {
         public void onPreviewFrame(byte[] data, Camera camera) {
             Camera.Parameters parameters = camera.getParameters();
             Camera.Size size = parameters.getPreviewSize();
@@ -291,25 +441,25 @@ public class MainActivity extends ActionBarActivity implements View.OnClickListe
             Image barcode = new Image(size.width, size.height, "Y800");
             barcode.setData(data);
 
-
-            int result = scanner.scanImage(barcode);
+            int result = mScanner.scanImage(barcode);
 
             if (result != 0) {
-                previewing = false;
-                mCamera.setPreviewCallback(null);
-                mCamera.stopPreview();
-                buttons.setVisibility(View.VISIBLE);
-                button.setVisibility(View.INVISIBLE);
+                SymbolSet symbolSet = mScanner.getResults();
+                for (Symbol symbol : symbolSet) {
+                    if(isNumber(symbol.getData())) {
+                        String money = symbol.getData();
 
-                SymbolSet syms = scanner.getResults();
-                for (Symbol sym : syms) {
-                    vib.vibrate(100);
-                    sp.play(sound_id, 1.0F, 1.0F, 0, 0, 1.0F);
-                    if(isNumber(sym.getData())) {
-                        Toast.makeText(MainActivity.this, sym.getData(), Toast.LENGTH_SHORT).show();
-                        new SendThread(MainActivity.this, sym.getData()).start();
+                        mCamera.setPreviewCallback(null);
+                        mCamera.stopPreview();
+                        setVisibilities(1);
+                        mVibrator.vibrate(100);
+                        mSoundPool.play(sound_id, 1.0F, 1.0F, 0, 0, 1.0F);
+                        new SendThread(MainActivity.this, money).start();
+                        mBarcodeScanned = true;
+                        mAmountsList.add(0, Integer.parseInt(money));
+                        mGoodsNameAdapter.insert(money + "円商品 ¥" + money + "-", 0);
+                        mGoodsLv.setAdapter(mGoodsNameAdapter);
                     }
-                    barcodeScanned = true;
                 }
             }
         }
