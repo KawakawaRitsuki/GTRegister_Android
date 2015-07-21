@@ -20,13 +20,17 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:textAppearance="?android:attr/textAppearanceLarge"
-                android:text="お預かり："/>
+                android:text="お預かり："
+                android:layout_marginLeft="15dp"
+                android:layout_marginTop="15dp" />
 
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:textAppearance="?android:attr/textAppearanceLarge"
-                android:id="@+id/azukari" />
+                android:id="@+id/azukari"
+                android:layout_marginTop="15dp"
+                android:layout_marginRight="15dp" />
         </LinearLayout>
 
         <LinearLayout
@@ -39,13 +43,15 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:textAppearance="?android:attr/textAppearanceLarge"
-                android:text="現計　　：" />
+                android:text="現計　　："
+                android:layout_marginLeft="15dp" />
 
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:textAppearance="?android:attr/textAppearanceLarge"
-                android:id="@+id/genkei" />
+                android:id="@+id/genkei"
+                android:layout_marginRight="15dp" />
         </LinearLayout>
 
         <LinearLayout
@@ -57,13 +63,17 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:textAppearance="?android:attr/textAppearanceLarge"
-                android:text="お釣り　：" />
+                android:text="お釣り　："
+                android:layout_marginLeft="15dp"
+                android:layout_marginBottom="15dp" />
 
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:textAppearance="?android:attr/textAppearanceLarge"
-                android:id="@+id/change" />
+                android:id="@+id/change"
+                android:layout_marginRight="15dp"
+                android:layout_marginBottom="15dp" />
         </LinearLayout>
     </LinearLayout>
 </LinearLayout>

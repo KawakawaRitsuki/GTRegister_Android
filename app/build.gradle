@@ -1,4 +1,15 @@
 apply plugin: 'com.android.application'
+apply plugin: 'me.tatarka.retrolambda'
+
+buildscript {
+    repositories {
+        jcenter()
+    }
+    dependencies {
+        classpath 'com.android.tools.build:gradle:1.0.0'
+        classpath 'me.tatarka:gradle-retrolambda:2.5.0'
+    }
+}
 
 android {
     compileSdkVersion 22
@@ -27,6 +38,10 @@ android {
     sourceSets {
         main.jniLibs.srcDirs = ['libs']
         test.jniLibs.srcDirs = ['libs']
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
     }
 }
 
