@@ -15,6 +15,7 @@ import android.preference.PreferenceManager;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -29,6 +30,7 @@ import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import net.sourceforge.zbar.Config;
 import net.sourceforge.zbar.Image;
@@ -155,7 +157,7 @@ public class MainActivity extends AppCompatActivity {
             alert("Are you sure?",
                     mGoodsLv.getItemAtPosition(_position).toString() + "を削除しますか？",
                     (DialogInterface dialog, int which) -> delete(_position)
-            ,true);
+                    , true);
             return false;
         });
 
@@ -183,7 +185,7 @@ public class MainActivity extends AppCompatActivity {
                     e.printStackTrace();
                 }
             }
-                return false;
+            return false;
         });
     }
 
@@ -232,6 +234,80 @@ public class MainActivity extends AppCompatActivity {
         Pattern p = Pattern.compile("^[1-9][0-9]*");
         Matcher m = p.matcher(str);
         return m.find();
+    }
+
+    @Override
+    public boolean dispatchKeyEvent(KeyEvent e) {
+
+        if (e.getAction() == KeyEvent.ACTION_DOWN) {
+            switch (e.getKeyCode()){
+                case KeyEvent.KEYCODE_VOLUME_UP:
+                    String volUp = mSharedPreferences.getString("volUp","none");
+                    switch (volUp){
+                        case "none":
+                            return false;
+                        case "next":
+                            if (mBarcodeScanned) {
+                                mBarcodeScanned = false;
+                                mCamera.setPreviewCallback(previewCb);
+                                mCamera.startPreview();
+                                mCamera.cancelAutoFocus();
+                                mCamera.autoFocus(null);
+                                setVisibilities(2);
+                            } else {
+                                mCamera.cancelAutoFocus();
+                                try {
+                                    mCamera.autoFocus(null);
+                                } catch (RuntimeException e1) {
+                                    e1.printStackTrace();
+                                }
+                            }
+                            return true;
+                        case "bill":
+                            bill(null);
+                            return true;
+                        case "discount":
+                            discount(null);
+                            return true;
+
+                    }
+                    return false;
+                case KeyEvent.KEYCODE_VOLUME_DOWN:
+                    String volDown = mSharedPreferences.getString("volDown","none");
+                    switch (volDown){
+                        case "none":
+                            return false;
+                        case "next":
+                            if (mBarcodeScanned) {
+                                mBarcodeScanned = false;
+                                mCamera.setPreviewCallback(previewCb);
+                                mCamera.startPreview();
+                                mCamera.cancelAutoFocus();
+                                mCamera.autoFocus(null);
+                                setVisibilities(2);
+                            } else {
+                                mCamera.cancelAutoFocus();
+                                try {
+                                    mCamera.autoFocus(null);
+                                } catch (RuntimeException e1) {
+                                    e1.printStackTrace();
+                                }
+                            } 
+                            return true;
+                        case "bill":
+                            bill(null);
+                            return true;
+                        case "discount":
+                            discount(null);
+                            return true;
+
+
+                    }
+                    return false;
+            }
+        }
+
+        return super.dispatchKeyEvent(e);
     }
 
     public void bill(View v){
@@ -424,8 +500,8 @@ public class MainActivity extends AppCompatActivity {
 
             if (result != 0) {
                 SymbolSet symbolSet = mScanner.getResults();
-                for (Symbol symbol : symbolSet) {
-                    if(isNumber(symbol.getData())) {
+                for (Symbol symbol : symbolSet)
+                    if (isNumber(symbol.getData())) {
                         String money = symbol.getData();
 
                         mCamera.setPreviewCallback(null);
@@ -439,7 +515,6 @@ public class MainActivity extends AppCompatActivity {
                         mGoodsNameAdapter.insert(money + "円商品 ¥" + money + "-", 0);
                         mGoodsLv.setAdapter(mGoodsNameAdapter);
                     }
-                }
             }
         }
     };

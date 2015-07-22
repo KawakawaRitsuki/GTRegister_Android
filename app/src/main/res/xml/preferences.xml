@@ -29,9 +29,37 @@
             android:summary="下一桁の処理設定"
             android:dialogTitle="処理設定"
             android:entries="@array/entries_list_preference"
-            android:entryValues="@array/entryvalues_list_preference"
+            android:entryValues="@array/entryValues_list_preference"
             android:defaultValue="normal"/>
 
     </PreferenceCategory>
+
+    <PreferenceCategory
+        android:title="物理キー割当設定">
+
+        <ListPreference
+            android:key="volUp"
+            android:title="音量上キー割当設定"
+            android:summary="音量上キーを各機能に割り当てます。"
+            android:dialogTitle="音量上ボタン割当設定"
+            android:entries="@array/entries_vol_preference"
+            android:entryValues="@array/entryValues_vol_preference"
+            android:defaultValue="none"/>
+
+        <ListPreference
+            android:key="volDown"
+            android:title="音量下キー割当設定"
+            android:summary="音量下キーを各機能に割り当てます。"
+            android:dialogTitle="音量下ボタン割当設定"
+            android:entries="@array/entries_vol_preference"
+            android:entryValues="@array/entryValues_vol_preference"
+            android:defaultValue="none"/>
+
+    </PreferenceCategory>
+
+
+
+
+
 
 </PreferenceScreen>
