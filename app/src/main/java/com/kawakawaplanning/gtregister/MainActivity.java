@@ -6,7 +6,6 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
-import android.graphics.Color;
 import android.hardware.Camera;
 import android.media.AudioManager;
 import android.media.SoundPool;
@@ -15,7 +14,6 @@ import android.os.Vibrator;
 import android.preference.PreferenceManager;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
-import android.util.Log;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -241,45 +239,45 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public boolean dispatchKeyEvent(KeyEvent e) {
 
-        if (e.getAction() == KeyEvent.ACTION_DOWN) {
-            switch (e.getKeyCode()){
+        if (e.getAction() == KeyEvent.ACTION_DOWN)
+            switch (e.getKeyCode()) {
 
-                case KeyEvent.KEYCODE_VOLUME_UP:
-                case KeyEvent.KEYCODE_VOLUME_DOWN:
+            case KeyEvent.KEYCODE_VOLUME_UP:
+            case KeyEvent.KEYCODE_VOLUME_DOWN:
 
-                    switch (mSharedPreferences.getString("vol" + e.getKeyCode(),"none")){
-                        case "none":
-                            return false;
-                        case "next":
-                            if (mBarcodeScanned) {
-                                mBarcodeScanned = false;
-                                mCamera.setPreviewCallback(previewCb);
-                                mCamera.startPreview();
-                                mCamera.cancelAutoFocus();
+                switch (mSharedPreferences.getString("vol" + e.getKeyCode(), "none")) {
+                    case "none":
+                        return false;
+                    case "next":
+                        if (mBarcodeScanned) {
+                            mBarcodeScanned = false;
+                            mCamera.setPreviewCallback(previewCb);
+                            mCamera.startPreview();
+                            mCamera.cancelAutoFocus();
+                            mCamera.autoFocus(null);
+                            setVisibilities(2);
+                        } else {
+                            mCamera.cancelAutoFocus();
+                            try {
                                 mCamera.autoFocus(null);
-                                setVisibilities(2);
-                            } else {
-                                mCamera.cancelAutoFocus();
-                                try {
-                                    mCamera.autoFocus(null);
-                                } catch (RuntimeException e1) {
-                                    e1.printStackTrace();
-                                }
+                            } catch (RuntimeException e1) {
+                                e1.printStackTrace();
                             }
-                            return true;
-                        case "bill":
-                            bill(null);
-                            return true;
-                        case "discount":
-                            discount(null);
-                            return true;
+                        }
+                        return true;
+                    case "bill":
+                        bill(null);
+                        return true;
+                    case "discount":
+                        discount(null);
+                        return true;
 
-                    }
-                    return false;
-                case KeyEvent.KEYCODE_BACK:
-                    alert("Are you sure?", "アプリを終了してもいいですか？", (DialogInterface dialog, int which) -> finish(),true);
+                }
+                return false;
 
-            }
+            case KeyEvent.KEYCODE_BACK:
+                alert("Are you sure?", "アプリを終了してもいいですか？", (DialogInterface dialog, int which) -> finish(), true);
+
         }
 
         return super.dispatchKeyEvent(e);
@@ -376,21 +374,30 @@ public class MainActivity extends AppCompatActivity {
         double c = b / 10;
 
         String round = mSharedPreferences.getString("round","normal");
-        if (round.equals("round")) {
-            long l = Math.round(c);
-            int i = (int) (l * 10);
-            mAmountsList.add(0, i);
-        }else if (round.equals("ceil")) {
-            double d = Math.ceil(c);
-            int i = (int) (d * 10);
-            mAmountsList.add(0, i);
-        }else if (round.equals("floor")) {
-            double d = Math.floor(c);
-            int i = (int) (d * 10);
-            mAmountsList.add(0, i);
-        }else if (round.equals("normal")) {
-            double d = c * 10;
-            mAmountsList.add(0, (int) d);
+        switch (round) {
+            case "round": {
+                long l = Math.round(c);
+                int i = (int) (l * 10);
+                mAmountsList.add(0, i);
+                break;
+            }
+            case "ceil": {
+                double d = Math.ceil(c);
+                int i = (int) (d * 10);
+                mAmountsList.add(0, i);
+                break;
+            }
+            case "floor": {
+                double d = Math.floor(c);
+                int i = (int) (d * 10);
+                mAmountsList.add(0, i);
+                break;
+            }
+            case "normal": {
+                double d = c * 10;
+                mAmountsList.add(0, (int) d);
+                break;
+            }
         }
 
         ArrayAdapter<String> tempAdapter = new ArrayAdapter<>(MainActivity.this, R.layout.list_item);
