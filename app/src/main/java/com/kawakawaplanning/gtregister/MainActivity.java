@@ -6,6 +6,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
+import android.graphics.Color;
 import android.hardware.Camera;
 import android.media.AudioManager;
 import android.media.SoundPool;
@@ -199,12 +200,14 @@ public class MainActivity extends AppCompatActivity {
         adb.show();
     }
 
-    private void alertView(String title ,View view , DialogInterface.OnClickListener onClick , boolean cancelable ,boolean positiveBtn){
+    private void alertView(String title ,View view , DialogInterface.OnClickListener onClick , boolean cancelable ,boolean positiveBtn ,boolean negativeBtn){
         AlertDialog.Builder adb = new AlertDialog.Builder(this);
         adb.setTitle(title);
         adb.setView(view);
         if(positiveBtn)
             adb.setPositiveButton("OK", onClick);
+        if(negativeBtn)
+            adb.setNegativeButton("Cancel", onClick);
         adb.setCancelable(cancelable);
         adb.show();
     }
@@ -227,7 +230,6 @@ public class MainActivity extends AppCompatActivity {
             mBillBtn.setVisibility(View.VISIBLE);
             mInputBtn.setVisibility(View.INVISIBLE);
         }
-
     }
 
     public static boolean isNumber(String str){
@@ -241,9 +243,11 @@ public class MainActivity extends AppCompatActivity {
 
         if (e.getAction() == KeyEvent.ACTION_DOWN) {
             switch (e.getKeyCode()){
+
                 case KeyEvent.KEYCODE_VOLUME_UP:
-                    String volUp = mSharedPreferences.getString("volUp","none");
-                    switch (volUp){
+                case KeyEvent.KEYCODE_VOLUME_DOWN:
+
+                    switch (mSharedPreferences.getString("vol" + e.getKeyCode(),"none")){
                         case "none":
                             return false;
                         case "next":
@@ -272,38 +276,9 @@ public class MainActivity extends AppCompatActivity {
 
                     }
                     return false;
-                case KeyEvent.KEYCODE_VOLUME_DOWN:
-                    String volDown = mSharedPreferences.getString("volDown","none");
-                    switch (volDown){
-                        case "none":
-                            return false;
-                        case "next":
-                            if (mBarcodeScanned) {
-                                mBarcodeScanned = false;
-                                mCamera.setPreviewCallback(previewCb);
-                                mCamera.startPreview();
-                                mCamera.cancelAutoFocus();
-                                mCamera.autoFocus(null);
-                                setVisibilities(2);
-                            } else {
-                                mCamera.cancelAutoFocus();
-                                try {
-                                    mCamera.autoFocus(null);
-                                } catch (RuntimeException e1) {
-                                    e1.printStackTrace();
-                                }
-                            } 
-                            return true;
-                        case "bill":
-                            bill(null);
-                            return true;
-                        case "discount":
-                            discount(null);
-                            return true;
+                case KeyEvent.KEYCODE_BACK:
+                    alert("Are you sure?", "アプリを終了してもいいですか？", (DialogInterface dialog, int which) -> finish(),true);
 
-
-                    }
-                    return false;
             }
         }
 
@@ -311,6 +286,10 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void bill(View v){
+
+        mCamera.setPreviewCallback(null);
+        mCamera.stopPreview();
+        mBarcodeScanned = true;
 
         int temp = 0;
         for(int i: mAmountsList){
@@ -326,40 +305,46 @@ public class MainActivity extends AppCompatActivity {
         alertView("合計金額は" + sum + "円です",
                 view,
                 (DialogInterface dialog, int which) -> {
-                    EditText et = (EditText) view.findViewById(R.id.editText);
-                    String acceptance = et.getEditableText().toString();
+                    if (which == DialogInterface.BUTTON_POSITIVE) {
+                        EditText et = (EditText) view.findViewById(R.id.editText);
+                        String acceptance = et.getEditableText().toString();
 
-                    if (!acceptance.isEmpty() && Integer.parseInt(acceptance) >= sum) {
+                        if (!acceptance.isEmpty()) {
+                            if (Integer.parseInt(acceptance) >= sum) {
 
-                        int change = Integer.parseInt(acceptance) - sum;
-                        new SendThread(MainActivity.this, "kaikei," + Integer.parseInt(acceptance) + "," + sum + "," + change).start();
+                                int change = Integer.parseInt(acceptance) - sum;
+                                new SendThread(MainActivity.this, "kaikei," + Integer.parseInt(acceptance) + "," + sum + "," + change).start();
 
-                        LayoutInflater inflater1 = (LayoutInflater) MainActivity.this.getSystemService(LAYOUT_INFLATER_SERVICE);
-                        View view1 = inflater1.inflate(R.layout.dialog_change, (ViewGroup) findViewById(R.id.dialog_change_layout));
+                                LayoutInflater inflater1 = (LayoutInflater) MainActivity.this.getSystemService(LAYOUT_INFLATER_SERVICE);
+                                View view1 = inflater1.inflate(R.layout.dialog_change, (ViewGroup) findViewById(R.id.dialog_change_layout));
 
-                        TextView tv1 = (TextView) view1.findViewById(R.id.azukari);
-                        TextView tv2 = (TextView) view1.findViewById(R.id.genkei);
-                        TextView tv3 = (TextView) view1.findViewById(R.id.change);
+                                TextView tv1 = (TextView) view1.findViewById(R.id.azukari);
+                                TextView tv2 = (TextView) view1.findViewById(R.id.genkei);
+                                TextView tv3 = (TextView) view1.findViewById(R.id.change);
 
-                        tv1.setText(acceptance + "円");
-                        tv2.setText(sum + "円");
-                        tv3.setText(change + "円");
+                                tv1.setText(acceptance + "円");
+                                tv2.setText(sum + "円");
+                                tv3.setText(change + "円");
 
-                        alertView("合計金額は" + sum + "円です",
-                                view1,
-                                (DialogInterface dialog1, int which1) -> {
-                                    mAmountsList.clear();
-                                    mGoodsNameAdapter.clear();
-                                    setVisibilities(0);
-                                },
-                                false,
-                                true);
-                    } else {
-                        //金額不正時処理
-                        Log.v("kp", "金額を入力して");
+                                alertView("合計金額は" + sum + "円です",
+                                        view1,
+                                        (DialogInterface dialog1, int which1) -> {
+                                            mAmountsList.clear();
+                                            mGoodsNameAdapter.clear();
+                                            setVisibilities(0);
+                                        },
+                                        false,
+                                        true,
+                                        false);
+                            } else {
+                                Toast.makeText(this, "受取金額が合計金額を下回っています", Toast.LENGTH_SHORT).show();
+                            }
+                        } else {
+                            Toast.makeText(this, "金額を入力してください", Toast.LENGTH_SHORT).show();
+                        }
                     }
-
                 },
+                true,
                 true,
                 true);
 
@@ -373,6 +358,7 @@ public class MainActivity extends AppCompatActivity {
         adb.setTitle("割引選択");
         adb.setView(view);
         adb.setCancelable(true);
+        adb.setNegativeButton("Cancel",null);
         alertDialog = adb.show();
     }
 
@@ -449,6 +435,7 @@ public class MainActivity extends AppCompatActivity {
                         mGoodsLv.setAdapter(mGoodsNameAdapter);
                     }//else文でエラー書く
                 });
+        adb.setNegativeButton("Cancel",null);
         adb.setCancelable(true);
 
         final AlertDialog ad = adb.create();
@@ -508,9 +495,10 @@ public class MainActivity extends AppCompatActivity {
                         mCamera.stopPreview();
                         setVisibilities(1);
                         mVibrator.vibrate(100);
+                        mBarcodeScanned = true;
                         mSoundPool.play(sound_id, 1.0F, 1.0F, 0, 0, 1.0F);
                         new SendThread(MainActivity.this, money).start();
-                        mBarcodeScanned = true;
+
                         mAmountsList.add(0, Integer.parseInt(money));
                         mGoodsNameAdapter.insert(money + "円商品 ¥" + money + "-", 0);
                         mGoodsLv.setAdapter(mGoodsNameAdapter);
@@ -521,14 +509,14 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.menu_main, menu);
+        menu.add(0,0,0,"Settings");
         return true;
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
-        if (id == R.id.action_settings) {
+        if (id == 0) {
             Intent intent = new Intent();
             intent.setClass(this , Preferences.class);
             startActivity(intent);

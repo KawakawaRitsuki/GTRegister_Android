@@ -38,7 +38,7 @@
         android:title="物理キー割当設定">
 
         <ListPreference
-            android:key="volUp"
+            android:key="vol24"
             android:title="音量上キー割当設定"
             android:summary="音量上キーを各機能に割り当てます。"
             android:dialogTitle="音量上ボタン割当設定"
@@ -47,7 +47,7 @@
             android:defaultValue="none"/>
 
         <ListPreference
-            android:key="volDown"
+            android:key="vol25"
             android:title="音量下キー割当設定"
             android:summary="音量下キーを各機能に割り当てます。"
             android:dialogTitle="音量下ボタン割当設定"
@@ -56,10 +56,5 @@
             android:defaultValue="none"/>
 
     </PreferenceCategory>
-
-
-
-
-
 
 </PreferenceScreen>
