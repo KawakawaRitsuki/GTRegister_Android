@@ -6,10 +6,24 @@
         <item>下一桁を切り捨て</item>
         <item>何もしない</item>
     </string-array>
-    <string-array name="entryvalues_list_preference">
+    <string-array name="entryValues_list_preference">
         <item>round</item>
         <item>ceil</item>
         <item>floor</item>
         <item>normal</item>
     </string-array>
+
+    <string-array name="entries_vol_preference">
+        <item>何もしない</item>
+        <item>読込開始/オートフォーカス</item>
+        <item>会計</item>
+        <item>割引</item>
+    </string-array>
+    <string-array name="entryValues_vol_preference">
+        <item>none</item>
+        <item>next</item>
+        <item>bill</item>
+        <item>discount</item>
+    </string-array>
+
 </resources>

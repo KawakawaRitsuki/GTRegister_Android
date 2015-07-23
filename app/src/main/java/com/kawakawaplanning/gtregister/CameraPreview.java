@@ -15,6 +15,7 @@ import android.view.SurfaceView;
 
 import java.io.IOException;
 
+@SuppressWarnings("deprecation")
 public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback {
     private SurfaceHolder mHolder;
     private Camera mCamera;
@@ -50,6 +51,7 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
         try {
             mCamera.stopPreview();
         } catch (Exception e){
+            e.printStackTrace();
         }
 
         try {
