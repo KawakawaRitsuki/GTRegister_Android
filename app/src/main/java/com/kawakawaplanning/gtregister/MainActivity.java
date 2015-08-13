@@ -14,6 +14,7 @@ import android.os.Vibrator;
 import android.preference.PreferenceManager;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -72,6 +73,10 @@ public class MainActivity extends AppCompatActivity {
      * O mDiscountBtn
      * X mButton1
      *
+     *  複数訳があるものを統一
+     *
+     *  - 金額 -> amount
+     *
      */
 
     private void assignViews() {
@@ -126,6 +131,8 @@ public class MainActivity extends AppCompatActivity {
         //カメラ系の定義
         mScanner           = new ImageScanner();
         mCamera            = Camera.open();
+        // 下記、前カメラ用 質悪い故に反応速度悪し
+        // mCamera            = Camera.open(1);
         mPreview           = new CameraPreview(this, mCamera, previewCb, null);
 
         //変数系の定義
@@ -137,6 +144,21 @@ public class MainActivity extends AppCompatActivity {
         //その他の定義
         mVibrator          = (Vibrator) getSystemService(VIBRATOR_SERVICE);
         mSharedPreferences = PreferenceManager.getDefaultSharedPreferences(this);
+
+        if(mSharedPreferences.getBoolean("has_list",false)) {
+            String amount[] = mSharedPreferences.getString("amountList", "").split(",");
+            String name[]   = mSharedPreferences.getString("nameList", "").split(",");
+
+
+
+            for (int i = 0; i != amount.length; i++){
+                System.out.println(amount[i]);
+                System.out.println(name[i]);
+                mAmountsList.add(0, Integer.parseInt(amount[i]));
+                mGoodsNameAdapter.insert(name[i],0);
+            }
+            mGoodsLv.setAdapter(mGoodsNameAdapter);
+        }
 
     }
 
@@ -164,7 +186,11 @@ public class MainActivity extends AppCompatActivity {
             SharedPreferences.Editor editor = mSharedPreferences.edit();
             editor.putString("ip_preference","192.168.XXX.XXX");
             editor.putString("port_preference", "10000");
-            editor.putBoolean("booted",true);
+            editor.putBoolean("booted", true);
+
+            editor.putString("amountList", "");
+            editor.putString("nameList","");
+            editor.putBoolean("has_list", false);
             editor.apply();
         }
 
@@ -330,6 +356,12 @@ public class MainActivity extends AppCompatActivity {
                                             mAmountsList.clear();
                                             mGoodsNameAdapter.clear();
                                             setVisibilities(0);
+                                            SharedPreferences.Editor editor = mSharedPreferences.edit();
+
+                                            editor.putString("amountList","");
+                                            editor.putString("nameList", "");
+                                            editor.putBoolean("has_list", false);
+                                            editor.apply();
                                         },
                                         false,
                                         true,
@@ -413,6 +445,29 @@ public class MainActivity extends AppCompatActivity {
         mGoodsNameAdapter.insert(temp + "円商品 ¥" + mAmountsList.get(0) + "- (" + Integer.parseInt(btnTxt) + "割引)", 0);
         mGoodsLv.setAdapter(mGoodsNameAdapter);
 
+        SharedPreferences.Editor editor = mSharedPreferences.edit();
+        String[] amountArray = mSharedPreferences.getString("amountList","").split(",");
+        String[] nameArray = mSharedPreferences.getString("nameList","").split(",");
+
+        String amount = "";
+        String name = "";
+
+        for (int i = 0; i != nameArray.length - 1; i++){
+            if( i == 0 ){
+                amount = amountArray[i];
+                name   = nameArray[i];
+            }else {
+                amount = amount + "," + amountArray[i];
+                name   = name + "," + nameArray[i];
+            }
+        }
+
+        editor.putString("amountList", amount + "," + mAmountsList.get(0));
+        editor.putString("nameList", name + "," +mGoodsNameAdapter.getItem(0));
+        editor.putBoolean("has_list", true);
+
+        editor.apply();
+
         new SendThread(MainActivity.this,"waribiki," + temp + "," + mAmountsList.get(0) + "," + Integer.parseInt(btnTxt)).start();
 
         alertDialog.dismiss();
@@ -440,6 +495,19 @@ public class MainActivity extends AppCompatActivity {
                         mAmountsList.add(0, Integer.parseInt(input));
                         mGoodsNameAdapter.insert(input + "円商品 ¥" + input + "-", 0);
                         mGoodsLv.setAdapter(mGoodsNameAdapter);
+
+                        if(!mSharedPreferences.getBoolean("has_list",false)){
+                            SharedPreferences.Editor editor = mSharedPreferences.edit();
+                            editor.putString("amountList", input);
+                            editor.putString("nameList", input + "円商品 ¥" + input + "-");
+                            editor.putBoolean("has_list", true);
+                            editor.apply();
+                        }else{
+                            SharedPreferences.Editor editor = mSharedPreferences.edit();
+                            editor.putString("amountList",mSharedPreferences.getString("amountList","") + "," + input);
+                            editor.putString("nameList",mSharedPreferences.getString("nameList","") + "," + input + "円商品 ¥" + input + "-");
+                            editor.apply();
+                        }
                     }//else文でエラー書く
                 });
         adb.setNegativeButton("Cancel",null);
@@ -466,6 +534,29 @@ public class MainActivity extends AppCompatActivity {
         mGoodsNameAdapter.clear();
         mGoodsNameAdapter = tempAdapter;
         mGoodsLv.setAdapter(mGoodsNameAdapter);
+
+        SharedPreferences.Editor editor = mSharedPreferences.edit();
+        String[] amountArray = mSharedPreferences.getString("amountList","").split(",");
+        String[] nameArray = mSharedPreferences.getString("nameList","").split(",");
+
+        String amount = "";
+        String name = "";
+
+        for (int i = 0; i != nameArray.length; i++){
+
+            if( i == 0 ){
+                amount = amountArray[i];
+                name   = nameArray[i];
+            }else if(i != position){
+                amount = amount + "," + amountArray[i];
+                name   = name + "," + nameArray[i];
+            }
+
+        }
+        editor.putString("amountList", amount);
+        editor.putString("nameList", name);
+        editor.putBoolean("has_list", true);
+        editor.apply();
     }
 
     public void onPause() {
@@ -509,6 +600,20 @@ public class MainActivity extends AppCompatActivity {
                         mAmountsList.add(0, Integer.parseInt(money));
                         mGoodsNameAdapter.insert(money + "円商品 ¥" + money + "-", 0);
                         mGoodsLv.setAdapter(mGoodsNameAdapter);
+
+                        if(!mSharedPreferences.getBoolean("has_list",false)){
+                            SharedPreferences.Editor editor = mSharedPreferences.edit();
+                            editor.putString("amountList", money);
+                            editor.putString("nameList", money + "円商品 ¥" + money + "-");
+                            editor.putBoolean("has_list", true);
+                            editor.apply();
+                        }else{
+                            SharedPreferences.Editor editor = mSharedPreferences.edit();
+                            editor.putString(mSharedPreferences.getString("amountList","") + "amountList", money);
+                            editor.putString(mSharedPreferences.getString("nameList","") + "nameList", money + "円商品 ¥" + money + "-");
+                            editor.apply();
+                        }
+
                     }
             }
         }
